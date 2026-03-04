@@ -1,2 +1,0 @@
-# klondike-ultra
-Klondike Solitaire
