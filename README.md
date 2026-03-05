@@ -26,10 +26,10 @@ npm run preview
 
 ## Architecture
 
-| File | Description |
-|------|-------------|
-| `src/Card.ts` | Card model — suit, rank, face-up state, label/symbol helpers |
-| `src/Deck.ts` | Deck creation and Fisher-Yates shuffle |
-| `src/GameState.ts` | All game logic — move validation, state mutations, win detection |
-| `src/KlondikeGame.ts` | PixiJS renderer and drag-and-drop interaction |
-| `src/main.ts` | Application entry point |
+| File                  | Description                                                      |
+| --------------------- | ---------------------------------------------------------------- |
+| `src/Card.ts`         | Card model — suit, rank, face-up state, label/symbol helpers     |
+| `src/Deck.ts`         | Deck creation and Fisher-Yates shuffle                           |
+| `src/GameState.ts`    | All game logic — move validation, state mutations, win detection |
+| `src/KlondikeGame.ts` | PixiJS renderer and drag-and-drop interaction                    |
+| `src/main.ts`         | Application entry point                                          |
