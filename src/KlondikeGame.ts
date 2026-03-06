@@ -7,6 +7,8 @@ import {
   FederatedPointerEvent
 } from 'pixi.js';
 import { Card } from './Card';
+import type { ColorTheme } from './types/themeTypes';
+import { defaultTheme } from './themes/defaultTheme';
 import {
   type GameState,
   createGameState,
@@ -24,9 +26,6 @@ import {
 const CARD_W = 80;
 const CARD_H = 112;
 const CARD_RADIUS = 8;
-const CARD_FACE_DOWN_COLOR = 0x2255aa;
-const CARD_FACE_UP_BG = 0xffffff;
-const CARD_BORDER = 0x888888;
 const TABLEAU_X_START = 20;
 const TABLEAU_Y = 180;
 const COL_SPACING = 100;
@@ -37,31 +36,32 @@ const WASTE_X = 130;
 const TOP_Y = 40;
 const FOUNDATION_X_START = 330;
 const FOUNDATION_Y = TOP_Y;
-const GREEN_BG = 0x276221;
 
 // ─── Helper: build card containers ────────────────────────────────────────────
-function makeCardBack(): Container {
+function makeCardBack(theme: ColorTheme): Container {
   const c = new Container();
   const g = new Graphics();
   g.roundRect(0, 0, CARD_W, CARD_H, CARD_RADIUS)
-    .fill({ color: CARD_FACE_DOWN_COLOR })
-    .stroke({ color: CARD_BORDER, width: 1 });
+    .fill({ color: theme.cardFaceDownColor })
+    .stroke({ color: theme.cardBorderColor, width: 1 });
   // Pattern
   g.roundRect(4, 4, CARD_W - 8, CARD_H - 8, 6).stroke({
-    color: 0x5588dd,
+    color: theme.cardInteriorStrokeColor,
     width: 1
   });
   c.addChild(g);
   return c;
 }
 
-function makeCardFace(card: Card): Container {
+function makeCardFace(card: Card, theme: ColorTheme): Container {
   const c = new Container();
-  const textColor = card.isRed ? 0xcc0000 : 0x111111;
+  const textColor = card.isRed
+    ? theme.playingCardsRed
+    : theme.playingCardsBlack;
   const g = new Graphics();
   g.roundRect(0, 0, CARD_W, CARD_H, CARD_RADIUS)
-    .fill({ color: CARD_FACE_UP_BG })
-    .stroke({ color: CARD_BORDER, width: 1 });
+    .fill({ color: theme.playingCardsBackground })
+    .stroke({ color: theme.cardBorderColor, width: 1 });
   c.addChild(g);
 
   const label = card.label;
@@ -95,15 +95,18 @@ function makeCardFace(card: Card): Container {
   return c;
 }
 
-function makeEmptySlot(label = ''): Container {
+function makeEmptySlot(theme: ColorTheme, label = ''): Container {
   const c = new Container();
   const g = new Graphics();
   g.roundRect(0, 0, CARD_W, CARD_H, CARD_RADIUS)
-    .fill({ color: 0x1a4a18 })
-    .stroke({ color: 0x55aa55, width: 1.5 });
+    .fill({ color: theme.emptySlotFill })
+    .stroke({ color: theme.emptySlotStroke, width: 1.5 });
   c.addChild(g);
   if (label) {
-    const style = new TextStyle({ fontSize: 22, fill: 0x55aa55 });
+    const style = new TextStyle({
+      fontSize: 22,
+      fill: theme.emptySlotTextColor
+    });
     const t = new Text({ text: label, style });
     t.anchor.set(0.5, 0.5);
     t.x = CARD_W / 2;
@@ -116,16 +119,20 @@ function makeEmptySlot(label = ''): Container {
 // ─── CardView ─────────────────────────────────────────────────────────────────
 class CardView extends Container {
   card: Card;
+  private theme: ColorTheme;
 
-  constructor(card: Card) {
+  constructor(card: Card, theme: ColorTheme) {
     super();
     this.card = card;
+    this.theme = theme;
     this.redraw();
   }
 
   redraw(): void {
     this.removeChildren();
-    const inner = this.card.faceUp ? makeCardFace(this.card) : makeCardBack();
+    const inner = this.card.faceUp
+      ? makeCardFace(this.card, this.theme)
+      : makeCardBack(this.theme);
     this.addChild(inner);
   }
 }
@@ -153,15 +160,26 @@ interface DragInfo {
 export class KlondikeGame {
   private app: Application;
   private state: GameState;
+  private themes: ColorTheme[];
+  private currentThemeIndex: number;
   private tableauViews: CardView[][] = [];
   private drag: DragInfo | null = null;
   private mainLayer!: Container;
   private dragLayer!: Container;
 
-  constructor(app: Application) {
+  constructor(app: Application, themes: ColorTheme[], initialThemeIndex = 0) {
     this.app = app;
+    this.themes = themes.length > 0 ? themes : [defaultTheme];
+    this.currentThemeIndex = Math.min(
+      Math.max(initialThemeIndex, 0),
+      Math.max(this.themes.length - 1, 0)
+    );
     this.state = createGameState();
     this.build();
+  }
+
+  private get theme(): ColorTheme {
+    return this.themes[this.currentThemeIndex];
   }
 
   private get W(): number {
@@ -177,7 +195,9 @@ export class KlondikeGame {
 
     // Background
     const bg = new Graphics();
-    bg.rect(0, 0, this.W, this.H).fill({ color: GREEN_BG });
+    bg.rect(0, 0, this.W, this.H).fill({
+      color: this.theme.feltGreenBg
+    });
     this.app.stage.addChild(bg);
 
     this.mainLayer = new Container();
@@ -190,20 +210,21 @@ export class KlondikeGame {
     this.buildFoundationSlots();
     this.buildTableauSlots();
     this.renderAll();
-
-    // New Game button
-    this.buildNewGameButton();
   }
 
   private buildNewGameButton(): void {
     const btn = new Container();
     const bg = new Graphics();
     bg.roundRect(0, 0, 90, 28, 6)
-      .fill({ color: 0x1a3a18 })
-      .stroke({ color: 0x55aa55, width: 1 });
+      .fill({ color: this.theme.newGameButtonFill })
+      .stroke({ color: this.theme.newGameButtonStroke, width: 1 });
     const label = new Text({
       text: 'New Game',
-      style: new TextStyle({ fontSize: 13, fill: 0xaaffaa, fontWeight: 'bold' })
+      style: new TextStyle({
+        fontSize: 13,
+        fill: this.theme.newGameButtonTextColor,
+        fontWeight: 'bold'
+      })
     });
     label.anchor.set(0.5, 0.5);
     label.x = 45;
@@ -215,6 +236,39 @@ export class KlondikeGame {
     btn.cursor = 'pointer';
     btn.on('pointerdown', () => this.newGame());
     this.mainLayer.addChild(btn);
+  }
+
+  private buildThemeButton(): void {
+    const btn = new Container();
+    const bg = new Graphics();
+    bg.roundRect(0, 0, 145, 28, 6)
+      .fill({ color: this.theme.newGameButtonFill })
+      .stroke({ color: this.theme.newGameButtonStroke, width: 1 });
+    const label = new Text({
+      text: `Theme: ${this.theme.name}`,
+      style: new TextStyle({
+        fontSize: 12,
+        fill: this.theme.newGameButtonTextColor,
+        fontWeight: 'bold'
+      })
+    });
+    label.anchor.set(0.5, 0.5);
+    label.x = 72.5;
+    label.y = 14;
+    btn.addChild(bg, label);
+    btn.x = this.W - 260;
+    btn.y = 8;
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    btn.on('pointerdown', () => this.cycleTheme());
+    this.mainLayer.addChild(btn);
+  }
+
+  private cycleTheme(): void {
+    if (this.themes.length <= 1) return;
+    this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
+    this.drag = null;
+    this.build();
   }
 
   private newGame(): void {
@@ -247,6 +301,7 @@ export class KlondikeGame {
     this.tableauViews = Array.from({ length: TABLEAU_COUNT }, () => []);
 
     this.buildNewGameButton();
+    this.buildThemeButton();
     this.renderStock();
     this.renderWaste();
     this.renderFoundations();
@@ -265,7 +320,9 @@ export class KlondikeGame {
     });
 
     const inner =
-      this.state.stock.length > 0 ? makeCardBack() : makeEmptySlot('↺');
+      this.state.stock.length > 0
+        ? makeCardBack(this.theme)
+        : makeEmptySlot(this.theme, '↺');
     sc.addChild(inner);
     this.mainLayer.addChild(sc);
   }
@@ -277,13 +334,13 @@ export class KlondikeGame {
     this.mainLayer.addChild(wc);
 
     if (this.state.waste.length === 0) {
-      wc.addChild(makeEmptySlot());
+      wc.addChild(makeEmptySlot(this.theme));
       return;
     }
 
     // Show top waste card
     const card = this.state.waste[this.state.waste.length - 1];
-    const cv = new CardView(card);
+    const cv = new CardView(card, this.theme);
     wc.addChild(cv);
 
     // Make draggable
@@ -307,10 +364,10 @@ export class KlondikeGame {
       const fp = this.state.foundations[fi];
       if (fp.length === 0) {
         const suit = ['♠', '♥', '♦', '♣'][fi];
-        fc.addChild(makeEmptySlot(suit));
+        fc.addChild(makeEmptySlot(this.theme, suit));
       } else {
         const top = fp[fp.length - 1];
-        fc.addChild(makeCardFace(top));
+        fc.addChild(makeCardFace(top, this.theme));
       }
 
       // Drop target
@@ -325,7 +382,7 @@ export class KlondikeGame {
       const pile = this.state.tableau[col];
 
       // Empty slot placeholder (drop target for empty columns)
-      const slot = makeEmptySlot();
+      const slot = makeEmptySlot(this.theme);
       slot.x = x;
       slot.y = TABLEAU_Y;
       slot.eventMode = 'static';
@@ -336,7 +393,7 @@ export class KlondikeGame {
       let yOff = 0;
       for (let row = 0; row < pile.length; row++) {
         const card = pile[row];
-        const cv = new CardView(card);
+        const cv = new CardView(card, this.theme);
         cv.x = x;
         cv.y = TABLEAU_Y + yOff;
         cv.zIndex = row;
@@ -413,7 +470,7 @@ export class KlondikeGame {
 
     const views: CardView[] = [];
     for (let i = 0; i < cards.length; i++) {
-      const dv = new CardView(cards[i]);
+      const dv = new CardView(cards[i], this.theme);
       dv.y = i * FACE_UP_OFFSET;
       dragContainer.addChild(dv);
       views.push(dv);
@@ -601,19 +658,26 @@ export class KlondikeGame {
     const overlay = new Container();
 
     const bg = new Graphics();
-    bg.rect(0, 0, this.W, this.H).fill({ color: 0x000000, alpha: 0.65 });
+    bg.rect(0, 0, this.W, this.H).fill({
+      color: this.theme.winScreenBGColor,
+      alpha: 0.65
+    });
     overlay.addChild(bg);
 
     const panel = new Graphics();
     panel
       .roundRect(this.W / 2 - 150, this.H / 2 - 80, 300, 160, 16)
-      .fill({ color: 0x276221 })
-      .stroke({ color: 0x55ff55, width: 3 });
+      .fill({ color: this.theme.winScreenPanelFill })
+      .stroke({ color: this.theme.winScreenPanelStroke, width: 3 });
     overlay.addChild(panel);
 
     const title = new Text({
       text: '🎉 You Win! 🎉',
-      style: new TextStyle({ fontSize: 32, fill: 0xffffff, fontWeight: 'bold' })
+      style: new TextStyle({
+        fontSize: 32,
+        fill: this.theme.lightTextColor,
+        fontWeight: 'bold'
+      })
     });
     title.anchor.set(0.5);
     title.x = this.W / 2;
@@ -622,10 +686,16 @@ export class KlondikeGame {
 
     const btn = new Container();
     const btnBg = new Graphics();
-    btnBg.roundRect(0, 0, 160, 40, 8).fill({ color: 0x55aa55 });
+    btnBg
+      .roundRect(0, 0, 160, 40, 8)
+      .fill({ color: this.theme.winScreenButtonColor });
     const btnLabel = new Text({
       text: 'Play Again',
-      style: new TextStyle({ fontSize: 18, fill: 0xffffff, fontWeight: 'bold' })
+      style: new TextStyle({
+        fontSize: 18,
+        fill: this.theme.lightTextColor,
+        fontWeight: 'bold'
+      })
     });
     btnLabel.anchor.set(0.5);
     btnLabel.x = 80;
