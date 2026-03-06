@@ -7,8 +7,8 @@ export const FOUNDATION_COUNT = 4;
 export const DRAW_COUNT = 1;
 
 export interface GameState {
-  tableau: Card[][];       // 7 columns
-  foundations: Card[][];   // 4 piles (one per suit, ordered spades/hearts/diamonds/clubs)
+  tableau: Card[][]; // 7 columns
+  foundations: Card[][]; // 4 piles (one per suit, ordered spades/hearts/diamonds/clubs)
   stock: Card[];
   waste: Card[];
 }
@@ -28,7 +28,10 @@ export function createGameState(): GameState {
     tableau.push(pile);
   }
 
-  const stock = deck.slice(idx).map(c => { c.faceUp = false; return c; });
+  const stock = deck.slice(idx).map((c) => {
+    c.faceUp = false;
+    return c;
+  });
   const waste: Card[] = [];
   const foundations: Card[][] = [[], [], [], []];
 
@@ -67,7 +70,7 @@ export function drawFromStock(state: GameState): void {
     // Recycle
     state.stock = state.waste.reverse();
     state.waste = [];
-    state.stock.forEach(c => (c.faceUp = false));
+    state.stock.forEach((c) => (c.faceUp = false));
     return;
   }
   const toDraw = Math.min(DRAW_COUNT, state.stock.length);
@@ -126,7 +129,10 @@ export function moveTableauToTableau(
 }
 
 /** Move the top card of a tableau column to a foundation. */
-export function moveTableauToFoundation(state: GameState, col: number): boolean {
+export function moveTableauToFoundation(
+  state: GameState,
+  col: number
+): boolean {
   const pile = state.tableau[col];
   if (pile.length === 0) return false;
   const card = pile[pile.length - 1];
@@ -159,7 +165,7 @@ export function moveFoundationToTableau(
 }
 
 export function isWon(state: GameState): boolean {
-  return state.foundations.every(f => f.length === 13);
+  return state.foundations.every((f) => f.length === 13);
 }
 
 /** Try to auto-move a single card to any foundation. Returns true if a move was made. */

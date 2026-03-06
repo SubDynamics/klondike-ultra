@@ -18,10 +18,14 @@ export function rankLabel(rank: Rank): string {
 
 export function suitSymbol(suit: Suit): string {
   switch (suit) {
-    case 'spades':   return '♠';
-    case 'hearts':   return '♥';
-    case 'diamonds': return '♦';
-    case 'clubs':    return '♣';
+    case 'spades':
+      return '♠';
+    case 'hearts':
+      return '♥';
+    case 'diamonds':
+      return '♦';
+    case 'clubs':
+      return '♣';
   }
 }
 

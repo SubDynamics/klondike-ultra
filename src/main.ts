@@ -10,7 +10,7 @@ async function main(): Promise<void> {
     backgroundColor: 0x276221,
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
-    preference: 'webgl',
+    preference: 'webgl'
   });
 
   document.getElementById('app')!.appendChild(app.canvas);

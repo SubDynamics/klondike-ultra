@@ -1,4 +1,11 @@
-import { Application, Container, Graphics, Text, TextStyle, FederatedPointerEvent } from 'pixi.js';
+import {
+  Application,
+  Container,
+  Graphics,
+  Text,
+  TextStyle,
+  FederatedPointerEvent
+} from 'pixi.js';
 import { Card } from './Card';
 import {
   type GameState,
@@ -10,7 +17,7 @@ import {
   canPlaceOnFoundation,
   isWon,
   TABLEAU_COUNT,
-  FOUNDATION_COUNT,
+  FOUNDATION_COUNT
 } from './GameState';
 
 // ─── Layout constants ──────────────────────────────────────────────────────────
@@ -36,9 +43,14 @@ const GREEN_BG = 0x276221;
 function makeCardBack(): Container {
   const c = new Container();
   const g = new Graphics();
-  g.roundRect(0, 0, CARD_W, CARD_H, CARD_RADIUS).fill({ color: CARD_FACE_DOWN_COLOR }).stroke({ color: CARD_BORDER, width: 1 });
+  g.roundRect(0, 0, CARD_W, CARD_H, CARD_RADIUS)
+    .fill({ color: CARD_FACE_DOWN_COLOR })
+    .stroke({ color: CARD_BORDER, width: 1 });
   // Pattern
-  g.roundRect(4, 4, CARD_W - 8, CARD_H - 8, 6).stroke({ color: 0x5588dd, width: 1 });
+  g.roundRect(4, 4, CARD_W - 8, CARD_H - 8, 6).stroke({
+    color: 0x5588dd,
+    width: 1
+  });
   c.addChild(g);
   return c;
 }
@@ -56,7 +68,11 @@ function makeCardFace(card: Card): Container {
   const symbol = card.symbol;
 
   // Top-left label
-  const topStyle = new TextStyle({ fontSize: 13, fontWeight: 'bold', fill: textColor });
+  const topStyle = new TextStyle({
+    fontSize: 13,
+    fontWeight: 'bold',
+    fill: textColor
+  });
   const topText = new Text({ text: `${label}\n${symbol}`, style: topStyle });
   topText.x = 4;
   topText.y = 2;
@@ -148,8 +164,12 @@ export class KlondikeGame {
     this.build();
   }
 
-  private get W(): number { return this.app.screen.width; }
-  private get H(): number { return this.app.screen.height; }
+  private get W(): number {
+    return this.app.screen.width;
+  }
+  private get H(): number {
+    return this.app.screen.height;
+  }
 
   // ── Build the scene ──────────────────────────────────────────────────────
   private build(): void {
@@ -178,8 +198,13 @@ export class KlondikeGame {
   private buildNewGameButton(): void {
     const btn = new Container();
     const bg = new Graphics();
-    bg.roundRect(0, 0, 90, 28, 6).fill({ color: 0x1a3a18 }).stroke({ color: 0x55aa55, width: 1 });
-    const label = new Text({ text: 'New Game', style: new TextStyle({ fontSize: 13, fill: 0xaaffaa, fontWeight: 'bold' }) });
+    bg.roundRect(0, 0, 90, 28, 6)
+      .fill({ color: 0x1a3a18 })
+      .stroke({ color: 0x55aa55, width: 1 });
+    const label = new Text({
+      text: 'New Game',
+      style: new TextStyle({ fontSize: 13, fill: 0xaaffaa, fontWeight: 'bold' })
+    });
     label.anchor.set(0.5, 0.5);
     label.x = 45;
     label.y = 14;
@@ -234,9 +259,13 @@ export class KlondikeGame {
     sc.y = TOP_Y;
     sc.eventMode = 'static';
     sc.cursor = 'pointer';
-    sc.on('pointerdown', () => { drawFromStock(this.state); this.renderAll(); });
+    sc.on('pointerdown', () => {
+      drawFromStock(this.state);
+      this.renderAll();
+    });
 
-    const inner = this.state.stock.length > 0 ? makeCardBack() : makeEmptySlot('↺');
+    const inner =
+      this.state.stock.length > 0 ? makeCardBack() : makeEmptySlot('↺');
     sc.addChild(inner);
     this.mainLayer.addChild(sc);
   }
@@ -260,7 +289,9 @@ export class KlondikeGame {
     // Make draggable
     cv.eventMode = 'static';
     cv.cursor = 'pointer';
-    cv.on('pointerdown', (e: FederatedPointerEvent) => this.startDragWaste(e, cv));
+    cv.on('pointerdown', (e: FederatedPointerEvent) =>
+      this.startDragWaste(e, cv)
+    );
     // Tap to auto-send to foundation
     cv.on('pointertap', () => this.autoPlayWaste());
   }
@@ -313,7 +344,9 @@ export class KlondikeGame {
         if (card.faceUp) {
           cv.eventMode = 'static';
           cv.cursor = 'pointer';
-          cv.on('pointerdown', (e: FederatedPointerEvent) => this.startDragTableau(e, col, row, cv));
+          cv.on('pointerdown', (e: FederatedPointerEvent) =>
+            this.startDragTableau(e, col, row, cv)
+          );
           cv.on('pointertap', () => this.handleTableauTap(col, row));
           cv.on('pointerup', () => this.dropOnTableau(col));
         } else {
@@ -352,7 +385,12 @@ export class KlondikeGame {
     this.beginDrag(e, [card], cv, -1, -1, -1);
   }
 
-  private startDragTableau(e: FederatedPointerEvent, col: number, row: number, cv: CardView): void {
+  private startDragTableau(
+    e: FederatedPointerEvent,
+    col: number,
+    row: number,
+    cv: CardView
+  ): void {
     const pile = this.state.tableau[col];
     const cards = pile.slice(row);
     this.beginDrag(e, cards, cv, col, row, -1);
@@ -393,7 +431,7 @@ export class KlondikeGame {
       origY: globalPos.y,
       offX: mousePos.x - globalPos.x,
       offY: mousePos.y - globalPos.y,
-      container: dragContainer,
+      container: dragContainer
     };
 
     this.app.stage.eventMode = 'static';
@@ -426,14 +464,17 @@ export class KlondikeGame {
   private tryDrop(gx: number, gy: number): boolean {
     if (!this.drag) return false;
     const { fromCol, fromRow, fromFoundation } = this.drag;
-    const cards = this.drag.views.map(v => v.card);
+    const cards = this.drag.views.map((v) => v.card);
     const card = cards[0];
 
     // Check foundation drop
     for (let fi = 0; fi < FOUNDATION_COUNT; fi++) {
       const fx = FOUNDATION_X_START + fi * COL_SPACING;
       if (this.hitTest(gx, gy, fx, FOUNDATION_Y)) {
-        if (cards.length === 1 && canPlaceOnFoundation(card, this.state.foundations[fi])) {
+        if (
+          cards.length === 1 &&
+          canPlaceOnFoundation(card, this.state.foundations[fi])
+        ) {
           // Remove from source
           this.removeFromSource(fromCol, fromRow, fromFoundation, 1);
           this.state.foundations[fi].push(card);
@@ -450,7 +491,16 @@ export class KlondikeGame {
       const colHeight = this.tableauHeight(col);
       const cy = colHeight;
 
-      if (this.hitTest(gx, gy, cx, Math.max(TABLEAU_Y, cy - 30), CARD_W, CARD_H + 60)) {
+      if (
+        this.hitTest(
+          gx,
+          gy,
+          cx,
+          Math.max(TABLEAU_Y, cy - 30),
+          CARD_W,
+          CARD_H + 60
+        )
+      ) {
         if (canPlaceOnTableau(card, pile)) {
           this.removeFromSource(fromCol, fromRow, fromFoundation, cards.length);
           pile.push(...cards);
@@ -463,7 +513,12 @@ export class KlondikeGame {
     return false;
   }
 
-  private removeFromSource(fromCol: number, fromRow: number, fromFoundation: number, count: number): void {
+  private removeFromSource(
+    fromCol: number,
+    fromRow: number,
+    fromFoundation: number,
+    count: number
+  ): void {
     if (fromCol >= 0) {
       // From tableau
       this.state.tableau[fromCol].splice(fromRow, count);
@@ -499,11 +554,16 @@ export class KlondikeGame {
 
   private dropOnFoundation(fi: number): void {
     if (!this.drag) return;
-    const cards = this.drag.views.map(v => v.card);
+    const cards = this.drag.views.map((v) => v.card);
     const card = cards[0];
     if (cards.length !== 1) return;
     if (canPlaceOnFoundation(card, this.state.foundations[fi])) {
-      this.removeFromSource(this.drag.fromCol, this.drag.fromRow, this.drag.fromFoundation, 1);
+      this.removeFromSource(
+        this.drag.fromCol,
+        this.drag.fromRow,
+        this.drag.fromFoundation,
+        1
+      );
       this.state.foundations[fi].push(card);
       this.drag = null;
       this.renderAll();
@@ -513,11 +573,16 @@ export class KlondikeGame {
 
   private dropOnTableau(col: number): void {
     if (!this.drag) return;
-    const cards = this.drag.views.map(v => v.card);
+    const cards = this.drag.views.map((v) => v.card);
     const card = cards[0];
     const pile = this.state.tableau[col];
     if (canPlaceOnTableau(card, pile)) {
-      this.removeFromSource(this.drag.fromCol, this.drag.fromRow, this.drag.fromFoundation, cards.length);
+      this.removeFromSource(
+        this.drag.fromCol,
+        this.drag.fromRow,
+        this.drag.fromFoundation,
+        cards.length
+      );
       pile.push(...cards);
       this.drag = null;
       this.renderAll();
@@ -540,14 +605,15 @@ export class KlondikeGame {
     overlay.addChild(bg);
 
     const panel = new Graphics();
-    panel.roundRect(this.W / 2 - 150, this.H / 2 - 80, 300, 160, 16)
+    panel
+      .roundRect(this.W / 2 - 150, this.H / 2 - 80, 300, 160, 16)
       .fill({ color: 0x276221 })
       .stroke({ color: 0x55ff55, width: 3 });
     overlay.addChild(panel);
 
     const title = new Text({
       text: '🎉 You Win! 🎉',
-      style: new TextStyle({ fontSize: 32, fill: 0xffffff, fontWeight: 'bold' }),
+      style: new TextStyle({ fontSize: 32, fill: 0xffffff, fontWeight: 'bold' })
     });
     title.anchor.set(0.5);
     title.x = this.W / 2;
@@ -559,7 +625,7 @@ export class KlondikeGame {
     btnBg.roundRect(0, 0, 160, 40, 8).fill({ color: 0x55aa55 });
     const btnLabel = new Text({
       text: 'Play Again',
-      style: new TextStyle({ fontSize: 18, fill: 0xffffff, fontWeight: 'bold' }),
+      style: new TextStyle({ fontSize: 18, fill: 0xffffff, fontWeight: 'bold' })
     });
     btnLabel.anchor.set(0.5);
     btnLabel.x = 80;
