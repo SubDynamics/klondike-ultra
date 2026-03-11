@@ -1,7 +1,11 @@
-import { Application } from 'pixi.js';
+import { Application, Assets } from 'pixi.js';
 import { KlondikeGame } from './KlondikeGame';
 import type { ColorTheme } from './types/themeTypes';
 import { defaultTheme } from './themes/defaultTheme';
+import spadeIcon from './assets/icons/spade.png';
+import heartIcon from './assets/icons/heart.png';
+import diamondIcon from './assets/icons/diamond.png';
+import clubIcon from './assets/icons/club.png';
 
 function isColorTheme(value: unknown): value is ColorTheme {
   if (!value || typeof value !== 'object') return false;
@@ -30,6 +34,14 @@ function loadThemes(): ColorTheme[] {
 }
 
 async function main(): Promise<void> {
+  // Register suit icons with Pixi's Assets system
+  await Assets.load([
+    { alias: 'suit-spade', src: spadeIcon },
+    { alias: 'suit-heart', src: heartIcon },
+    { alias: 'suit-diamond', src: diamondIcon },
+    { alias: 'suit-club', src: clubIcon }
+  ]);
+
   const themes = loadThemes();
   const app = new Application();
 

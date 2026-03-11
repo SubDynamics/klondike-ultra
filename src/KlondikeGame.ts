@@ -4,6 +4,7 @@ import {
   Graphics,
   Text,
   TextStyle,
+  Sprite,
   FederatedPointerEvent
 } from 'pixi.js';
 import { Card } from './Card';
@@ -53,6 +54,16 @@ function makeCardBack(theme: ColorTheme): Container {
   return c;
 }
 
+function getSuitIconAsset(suit: string): string {
+  const assetMap: Record<string, string> = {
+    spades: 'suit-spade',
+    hearts: 'suit-heart',
+    diamonds: 'suit-diamond',
+    clubs: 'suit-club'
+  };
+  return assetMap[suit] || 'suit-spade';
+}
+
 function makeCardFace(card: Card, theme: ColorTheme): Container {
   const c = new Container();
   const textColor = card.isRed
@@ -65,33 +76,35 @@ function makeCardFace(card: Card, theme: ColorTheme): Container {
   c.addChild(g);
 
   const label = card.label;
-  const symbol = card.symbol;
+  const iconAsset = getSuitIconAsset(card.suit);
 
-  // Top-left label
+  // Top-left label and icon
   const topStyle = new TextStyle({
-    fontSize: 13,
+    fontSize: 20,
     fontWeight: 'bold',
+    fontFamily: 'BioRhymeExpanded-ExtraBold',
     fill: textColor
   });
-  const topText = new Text({ text: `${label}\n${symbol}`, style: topStyle });
-  topText.x = 4;
+  const topText = new Text({ text: label, style: topStyle });
+  topText.x = 6;
   topText.y = 2;
 
-  // Center symbol
-  const centerStyle = new TextStyle({ fontSize: 32, fill: textColor });
-  const centerText = new Text({ text: symbol, style: centerStyle });
-  centerText.anchor.set(0.5, 0.5);
-  centerText.x = CARD_W / 2;
-  centerText.y = CARD_H / 2;
+  const topIcon = Sprite.from(iconAsset);
+  topIcon.width = 14;
+  topIcon.height = 14;
+  topIcon.anchor.set(0.5, 0.5);
+  topIcon.x = topText.x + topText.width + topIcon.width * 0.75;
+  topIcon.y = 12;
 
-  // Bottom-right label (rotated 180°, anchor at (0,0) so text extends up-left, staying in bounds)
-  const botText = new Text({ text: `${label}\n${symbol}`, style: topStyle });
-  botText.anchor.set(0, 0);
-  botText.rotation = Math.PI;
-  botText.x = CARD_W - 4;
-  botText.y = CARD_H - 2;
+  // Center icon
+  const centerIcon = Sprite.from(iconAsset);
+  centerIcon.width = 60;
+  centerIcon.height = 60;
+  centerIcon.anchor.set(0.5, 0.5);
+  centerIcon.x = CARD_W / 2;
+  centerIcon.y = CARD_H * 0.6;
 
-  c.addChild(topText, centerText, botText);
+  c.addChild(topText, topIcon, centerIcon);
   return c;
 }
 
