@@ -183,13 +183,12 @@ async function main(): Promise<void> {
 
   const choice = await showGameMenu(app, themes);
 
-  if (choice === 'spider') {
-    const game = new SpiderGame(app, themes);
-    app.renderer.on('resize', () => game.onResize());
-  } else {
-    const game = new KlondikeGame(app, themes);
-    app.renderer.on('resize', () => game.onResize());
-  }
+  const game =
+    choice === 'spider'
+      ? new SpiderGame(app, themes)
+      : new KlondikeGame(app, themes);
+
+  app.renderer.on('resize', () => game.onResize());
 }
 
 main().catch(console.error);
