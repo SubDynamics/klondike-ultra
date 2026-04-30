@@ -46,8 +46,7 @@ async function main(): Promise<void> {
   const app = new Application();
 
   await app.init({
-    width: 750,
-    height: 700,
+    resizeTo: window,
     backgroundColor: themes[0].feltGreenBg,
     resolution: window.devicePixelRatio || 1,
     autoDensity: true,
@@ -56,7 +55,8 @@ async function main(): Promise<void> {
 
   document.getElementById('app')!.appendChild(app.canvas);
 
-  new KlondikeGame(app, themes);
+  const game = new KlondikeGame(app, themes);
+  app.renderer.on('resize', () => game.onResize());
 }
 
 main().catch(console.error);
