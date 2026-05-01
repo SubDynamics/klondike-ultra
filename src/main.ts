@@ -54,13 +54,7 @@ function showGameMenu(app: Application, themes: ColorTheme[]): Promise<MenuChoic
     // Background
     const overlay = new Container();
     const bg = new Graphics();
-    const drawBg = () => {
-      const W = app.screen.width;
-      const H = app.screen.height;
-      bg.clear();
-      bg.rect(0, 0, W, H).fill({ color: theme.feltGreenBg });
-    };
-    drawBg();
+    bg.rect(0, 0, app.screen.width, app.screen.height).fill({ color: theme.feltGreenBg });
     overlay.addChild(bg);
 
     const W = app.screen.width;

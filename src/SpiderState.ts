@@ -72,6 +72,8 @@ function createSpiderDeck(suitMode: SpiderSuitMode): Card[] {
   const activeSuits: Suit[] =
     suitMode === 1 ? ['spades'] : suitMode === 2 ? ['spades', 'hearts'] : SUITS;
   // Each suit appears (8 / activeSuits.length) times across the 104-card double deck.
+  // This division is always exact because SpiderSuitMode is constrained to 1, 2, or 4,
+  // all of which evenly divide 8.
   const repetitions = 8 / activeSuits.length;
   const cards: Card[] = [];
   for (let r = 0; r < repetitions; r++) {
