@@ -32,6 +32,7 @@ import type { ColorTheme } from './types/themeTypes';
 import { defaultTheme } from './themes/defaultTheme';
 import {
   type SpiderState,
+  type SpiderSuitMode,
   createSpiderState,
   canPickUpStack,
   canPlaceOnSpiderTableau,
@@ -56,12 +57,12 @@ const BASE_CARD_W = 65;
 const BASE_CARD_H = 91;
 const BASE_CARD_RADIUS = 6;
 const BASE_TABLEAU_X_START = 10;
-const BASE_TABLEAU_Y = 160;
+const BASE_TABLEAU_Y = 120;
 const BASE_COL_SPACING = 74;
 const BASE_FACE_UP_OFFSET = 22;
 const BASE_FACE_DOWN_OFFSET = 11;
-const BASE_STOCK_X = 20;
-const BASE_TOP_Y = 38;
+/** Bottom padding below the stock pile. */
+const BASE_STOCK_BOTTOM_PAD = 18;
 const BASE_DROP_ZONE_EXPANSION = 25;
 const BASE_DROP_ZONE_BOTTOM = 55;
 
@@ -109,6 +110,7 @@ interface DragInfo {
 export class SpiderGame {
   private app: Application;
   private state: SpiderState;
+  private suitMode: SpiderSuitMode;
   private themes: ColorTheme[];
   private currentThemeIndex: number;
   private tableauViews: CardView[][] = [];
@@ -121,16 +123,18 @@ export class SpiderGame {
    *
    * @param app               - Initialised PixiJS Application instance.
    * @param themes            - Array of available colour themes (at least one required).
+   * @param suitMode          - Number of suits to play with: 1, 2, or 4 (default `4`).
    * @param initialThemeIndex - Index of the theme to activate on startup (default `0`).
    */
-  constructor(app: Application, themes: ColorTheme[], initialThemeIndex = 0) {
+  constructor(app: Application, themes: ColorTheme[], suitMode: SpiderSuitMode = 4, initialThemeIndex = 0) {
     this.app = app;
     this.themes = themes.length > 0 ? themes : [defaultTheme];
+    this.suitMode = suitMode;
     this.currentThemeIndex = Math.min(
       Math.max(initialThemeIndex, 0),
       Math.max(this.themes.length - 1, 0)
     );
-    this.state = createSpiderState();
+    this.state = createSpiderState(suitMode);
     this.build();
   }
 
@@ -190,13 +194,13 @@ export class SpiderGame {
   private get faceDownOffset(): number {
     return Math.round(BASE_FACE_DOWN_OFFSET * this.scale);
   }
-  /** X coordinate of the stock pile. */
+  /** X coordinate of the stock pile (horizontally centred). */
   private get stockX(): number {
-    return Math.round(BASE_STOCK_X * this.scale);
+    return Math.round(this.W / 2 - this.cardW / 2);
   }
-  /** Y coordinate of the top row (stock, HUD elements). */
-  private get topY(): number {
-    return Math.round(BASE_TOP_Y * this.scale);
+  /** Y coordinate of the stock pile (bottom of the gameplay area). */
+  private get stockY(): number {
+    return Math.round(this.H - this.cardH - BASE_STOCK_BOTTOM_PAD * this.scale);
   }
 
   /**
@@ -320,7 +324,7 @@ export class SpiderGame {
 
   /** Resets to a freshly shuffled Spider game and rebuilds the scene. */
   private newGame(): void {
-    this.state = createSpiderState();
+    this.state = createSpiderState(this.suitMode);
     this.drag = null;
     this.build();
   }
@@ -341,11 +345,12 @@ export class SpiderGame {
       fontWeight: 'bold'
     });
 
+    const suitLabel = this.suitMode === 1 ? '1-Suit' : this.suitMode === 2 ? '2-Suit' : '4-Suit';
     const seqText = new Text({
-      text: `Sequences: ${this.state.completedSequences}/${SPIDER_SEQUENCES_TO_WIN}`,
+      text: `${suitLabel} · Sequences: ${this.state.completedSequences}/${SPIDER_SEQUENCES_TO_WIN}`,
       style
     });
-    seqText.x = Math.round(120 * s);
+    seqText.x = Math.round(10 * s);
     seqText.y = Math.round(16 * s);
     this.mainLayer.addChild(seqText);
 
@@ -368,7 +373,7 @@ export class SpiderGame {
   private renderStock(): void {
     const sc = new Container();
     sc.x = this.stockX;
-    sc.y = this.topY;
+    sc.y = this.stockY;
 
     if (this.state.stock.length > 0) {
       // Draw up to 3 offset card-back layers for a "stack" effect.

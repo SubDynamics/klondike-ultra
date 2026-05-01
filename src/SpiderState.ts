@@ -1,9 +1,9 @@
 /**
  * @file SpiderState.ts
- * Spider Solitaire (4-suit) game state, move validation, and action functions.
+ * Spider Solitaire (1-suit, 2-suit, and 4-suit) game state, move validation, and action functions.
  *
  * **Rules implemented**
- * - 2 standard decks (104 cards total).
+ * - 2 standard decks (104 cards total), remapped to the selected suit count.
  * - 10 tableau columns: columns 0–3 have 6 cards each; columns 4–9 have 5 cards each.
  *   All cards are face-down except the top card of each column.
  * - Stock: 50 remaining cards dealt 10 at a time (one per column per deal).
@@ -16,8 +16,9 @@
  * - Win condition: all 8 sequences have been completed and removed.
  */
 
-import { Card } from './Card';
-import { createDeck, shuffle } from './Deck';
+import { Card, SUITS, RANKS } from './Card';
+import type { Suit } from './Card';
+import { shuffle } from './Deck';
 
 /** Number of tableau columns in a Spider game. */
 export const SPIDER_TABLEAU_COUNT = 10;
@@ -27,6 +28,14 @@ export const SPIDER_SEQUENCES_TO_WIN = 8;
 
 /** Number of cards dealt to each column from the stock on a single deal. */
 export const SPIDER_DEAL_SIZE = 10;
+
+/**
+ * The number of suits used in a Spider Solitaire game.
+ * - `1` – One suit (Spades only) — easiest.
+ * - `2` – Two suits (Spades and Hearts) — medium.
+ * - `4` – Four suits (all standard suits) — hardest.
+ */
+export type SpiderSuitMode = 1 | 2 | 4;
 
 /**
  * Complete mutable state for a single Spider Solitaire game session.
@@ -43,9 +52,37 @@ export interface SpiderState {
   stock: Card[];
   /** Number of complete King-through-Ace same-suit sequences removed so far (0–8). */
   completedSequences: number;
+  /** The suit mode used for this game session. */
+  suitMode: SpiderSuitMode;
 }
 
 // ─── Factory ──────────────────────────────────────────────────────────────────
+
+/**
+ * Creates a 104-card double deck remapped to the given number of suits.
+ *
+ * - `1` → 8 × 13 Spades cards.
+ * - `2` → 4 × 13 Spades + 4 × 13 Hearts cards.
+ * - `4` → 2 × 13 of each of the four standard suits.
+ *
+ * @param suitMode - Number of suits to use.
+ * @returns An unshuffled array of 104 {@link Card} objects.
+ */
+function createSpiderDeck(suitMode: SpiderSuitMode): Card[] {
+  const activeSuits: Suit[] =
+    suitMode === 1 ? ['spades'] : suitMode === 2 ? ['spades', 'hearts'] : SUITS;
+  // Each suit appears (8 / activeSuits.length) times across the 104-card double deck.
+  const repetitions = 8 / activeSuits.length;
+  const cards: Card[] = [];
+  for (let r = 0; r < repetitions; r++) {
+    for (const suit of activeSuits) {
+      for (const rank of RANKS) {
+        cards.push(new Card(suit, rank));
+      }
+    }
+  }
+  return cards;
+}
 
 /**
  * Creates a freshly shuffled {@link SpiderState} for a new Spider Solitaire game.
@@ -55,11 +92,11 @@ export interface SpiderState {
  * - Columns 4–9: 5 cards each (4 face-down + 1 face-up).
  * - Remaining 50 cards form the stock for 5 future deals of 10.
  *
+ * @param suitMode - Number of suits to use (default `4`).
  * @returns A ready-to-play initial Spider game state.
  */
-export function createSpiderState(): SpiderState {
-  // Two standard decks shuffled together.
-  const deck = shuffle([...createDeck(), ...createDeck()]);
+export function createSpiderState(suitMode: SpiderSuitMode = 4): SpiderState {
+  const deck = shuffle(createSpiderDeck(suitMode));
   const tableau: Card[][] = [];
   let idx = 0;
 
@@ -81,7 +118,7 @@ export function createSpiderState(): SpiderState {
     return c;
   });
 
-  return { tableau, stock, completedSequences: 0 };
+  return { tableau, stock, completedSequences: 0, suitMode };
 }
 
 // ─── Query helpers ────────────────────────────────────────────────────────────

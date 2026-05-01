@@ -1,5 +1,5 @@
 /**
- * @file GameState.ts
+ * @file KlondikeState.ts
  * Klondike Solitaire game state, move validation, and action functions.
  *
  * The {@link GameState} interface owns all mutable state for a single Klondike

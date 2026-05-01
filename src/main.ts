@@ -1,6 +1,7 @@
 import { Application, Assets, Container, Graphics, Text, TextStyle } from 'pixi.js';
 import { KlondikeGame } from './KlondikeGame';
 import { SpiderGame } from './SpiderGame';
+import type { SpiderSuitMode } from './SpiderState';
 import type { ColorTheme } from './types/themeTypes';
 import { defaultTheme } from './themes/defaultTheme';
 import spadeIcon from './assets/icons/spade.png';
@@ -34,29 +35,36 @@ function loadThemes(): ColorTheme[] {
   return themes.length > 0 ? themes : [defaultTheme];
 }
 
+/** Result of the game-selection menu. */
+type MenuChoice = 'klondike' | { type: 'spider'; suits: SpiderSuitMode };
+
 /**
  * Displays a full-screen PixiJS game-selection menu that lets the player
- * choose between Klondike Solitaire and Spider Solitaire.
- * Resolves with `'klondike'` or `'spider'` when the player makes a choice.
+ * choose between Klondike Solitaire and Spider Solitaire (with suit variant).
+ * Resolves with the player's full game choice.
  *
  * @param app    - The initialised PixiJS Application.
  * @param themes - Array of loaded colour themes; the first theme styles the menu.
- * @returns      A promise resolving to the chosen game identifier.
+ * @returns      A promise resolving to the chosen game.
  */
-function showGameMenu(
-  app: Application,
-  themes: ColorTheme[]
-): Promise<'klondike' | 'spider'> {
+function showGameMenu(app: Application, themes: ColorTheme[]): Promise<MenuChoice> {
   return new Promise((resolve) => {
     const theme = themes[0] ?? defaultTheme;
-    const W = app.screen.width;
-    const H = app.screen.height;
 
     // Background
     const overlay = new Container();
     const bg = new Graphics();
-    bg.rect(0, 0, W, H).fill({ color: theme.feltGreenBg });
+    const drawBg = () => {
+      const W = app.screen.width;
+      const H = app.screen.height;
+      bg.clear();
+      bg.rect(0, 0, W, H).fill({ color: theme.feltGreenBg });
+    };
+    drawBg();
     overlay.addChild(bg);
+
+    const W = app.screen.width;
+    const H = app.screen.height;
 
     // Title
     const titleStyle = new TextStyle({
@@ -133,6 +141,10 @@ function showGameMenu(
       return btn;
     }
 
+    // ── Main menu buttons ──────────────────────────────────────────────────
+
+    const mainButtons = new Container();
+
     const klondikeBtn = makeButton(
       'Klondike',
       '7 columns · 1 deck',
@@ -142,7 +154,7 @@ function showGameMenu(
       app.stage.removeChildren();
       resolve('klondike');
     });
-    overlay.addChild(klondikeBtn);
+    mainButtons.addChild(klondikeBtn);
 
     const spiderBtn = makeButton(
       'Spider',
@@ -150,10 +162,54 @@ function showGameMenu(
       W / 2 - totalBtnsW / 2 + btnW + gap
     );
     spiderBtn.on('pointerdown', () => {
-      app.stage.removeChildren();
-      resolve('spider');
+      mainButtons.visible = false;
+      suitButtons.visible = true;
+      subtitle.text = 'Choose a difficulty';
     });
-    overlay.addChild(spiderBtn);
+    mainButtons.addChild(spiderBtn);
+
+    overlay.addChild(mainButtons);
+
+    // ── Spider suit-selection sub-menu ─────────────────────────────────────
+
+    const suitButtons = new Container();
+    suitButtons.visible = false;
+
+    const suitOptions: { suits: SpiderSuitMode; label: string; sub: string }[] = [
+      { suits: 1, label: '1 Suit', sub: 'Easiest — Spades only' },
+      { suits: 2, label: '2 Suits', sub: 'Medium — Spades & Hearts' },
+      { suits: 4, label: '4 Suits', sub: 'Hardest — All suits' }
+    ];
+
+    const totalSuitW = btnW * 3 + gap * 2;
+    suitOptions.forEach(({ suits, label, sub }, i) => {
+      const btn = makeButton(label, sub, W / 2 - totalSuitW / 2 + i * (btnW + gap));
+      btn.on('pointerdown', () => {
+        app.stage.removeChildren();
+        resolve({ type: 'spider', suits });
+      });
+      suitButtons.addChild(btn);
+    });
+
+    // Back button
+    const backStyle = new TextStyle({
+      fontSize: Math.round(Math.min(W, H) * 0.025),
+      fill: theme.emptySlotTextColor
+    });
+    const backBtn = new Text({ text: '← Back', style: backStyle });
+    backBtn.anchor.set(0.5, 0);
+    backBtn.x = W / 2;
+    backBtn.y = btnY + btnH + H * 0.04;
+    backBtn.eventMode = 'static';
+    backBtn.cursor = 'pointer';
+    backBtn.on('pointerdown', () => {
+      suitButtons.visible = false;
+      mainButtons.visible = true;
+      subtitle.text = 'Choose a game to play';
+    });
+    suitButtons.addChild(backBtn);
+
+    overlay.addChild(suitButtons);
 
     app.stage.addChild(overlay);
   });
@@ -184,9 +240,9 @@ async function main(): Promise<void> {
   const choice = await showGameMenu(app, themes);
 
   const game =
-    choice === 'spider'
-      ? new SpiderGame(app, themes)
-      : new KlondikeGame(app, themes);
+    choice === 'klondike'
+      ? new KlondikeGame(app, themes)
+      : new SpiderGame(app, themes, choice.suits);
 
   app.renderer.on('resize', () => game.onResize());
 }

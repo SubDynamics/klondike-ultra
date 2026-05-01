@@ -20,7 +20,7 @@ import {
   isWon,
   TABLEAU_COUNT,
   FOUNDATION_COUNT
-} from './GameState';
+} from './KlondikeState';
 import {
   type CardDims,
   makeCardBack,
