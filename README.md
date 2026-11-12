@@ -1,6 +1,7 @@
-# klondike-ultra
+# Solitaire Ultra
 
-Klondike Solitaire built with **Vite**, **TypeScript**, and **PixiJS**.
+A multi-game solitaire collection built with **Vite**, **TypeScript**, and **PixiJS**.
+Currently includes **Klondike** and **Spider** solitaire.
 
 ## Getting Started
 
@@ -18,21 +19,44 @@ npm run preview
 
 ## How to Play
 
-- **Stock** (top-left blue card): Click to draw a card to the waste pile. Click again when empty to recycle.
-- **Waste** (top-left empty slot): Top card can be dragged to the tableau or foundations, or tapped to auto-send to a foundation.
-- **Foundations** (top-right 4 slots): Build up each suit from Ace to King. Drag or tap cards onto the matching foundation.
-- **Tableau** (7 columns): Build down in alternating colours. Drag face-up cards (and stacks) between columns. Only Kings can be placed on empty columns.
+At startup a game-selection menu lets you choose **Klondike** or **Spider**.
+
+### Klondike
+
+- **Stock** (top-left): Click to draw a card to the waste pile. Click again when empty to recycle.
+- **Waste**: Top card can be dragged to the tableau or foundations, or tapped to auto-send to a foundation.
+- **Foundations** (top-right 4 slots): Build up each suit from Ace to King.
+- **Tableau** (7 columns): Build down in alternating colours. Only Kings can start an empty column.
 - **New Game** button: Start a fresh game at any time.
+
+### Spider
+
+- **Stock** (top-left): Click to deal one card to each of the 10 columns (5 deals available). All columns must be non-empty before dealing.
+- **Tableau** (10 columns): Move any face-up card onto a column whose top card is one rank higher. Stacks of same-suit descending cards can be moved as a group.
+- **Sequences**: When a King-through-Ace run of the same suit forms at the bottom of a column it is automatically removed. Remove all 8 sequences to win.
+- **HUD**: The top bar shows completed sequences (0/8) and remaining stock deals.
 
 ## Architecture
 
-| File                  | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| `src/Card.ts`         | Card model — suit, rank, face-up state, label/symbol helpers     |
-| `src/Deck.ts`         | Deck creation and Fisher-Yates shuffle                           |
-| `src/GameState.ts`    | All game logic — move validation, state mutations, win detection |
-| `src/KlondikeGame.ts` | PixiJS renderer and drag-and-drop interaction (see below)        |
-| `src/main.ts`         | Application entry point                                          |
+### Shared modules
+
+| File                        | Description                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `src/Card.ts`               | Card model — suit, rank, face-up state, label/symbol helpers                           |
+| `src/Deck.ts`               | Deck creation and Fisher-Yates shuffle                                                 |
+| `src/shared/cardSprites.ts` | Shared PixiJS card-rendering utilities: `CardDims`, `makeCardBack`, `makeCardFace`, `makeEmptySlot`, `CardView` |
+| `src/types/themeTypes.ts`   | `ColorTheme` interface shared by all game renderers                                    |
+| `src/themes/`               | Theme objects implementing `ColorTheme`                                                |
+
+### Game-specific modules
+
+| File                  | Description                                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| `src/GameState.ts`    | Klondike game logic — move validation, state mutations, win check  |
+| `src/KlondikeGame.ts` | Klondike PixiJS renderer and drag-and-drop interaction             |
+| `src/SpiderState.ts`  | Spider game logic — move validation, stock deal, sequence removal  |
+| `src/SpiderGame.ts`   | Spider PixiJS renderer and drag-and-drop interaction               |
+| `src/main.ts`         | Application entry point + game-selection menu                      |
 
 ### KlondikeGame.ts structure
 
@@ -48,11 +72,21 @@ npm run preview
 | **Drag & drop** | `startDragWaste`, `startDragTableau`, `beginDrag`, `onDragMove`, `onDragEnd`, `tryDrop`, `dropOnFoundation`, `dropOnTableau` | Full pointer-drag pipeline: ghost creation → move → drop resolution. |
 | **Win detection** | `checkWin`, `showWinScreen` | Check all four foundations and overlay the win screen. |
 
-Module-level helper functions (`makeCardBack`, `makeCardFace`, `makeEmptySlot`) build PixiJS `Container` objects for individual card states. They are pure — they only receive a theme and a `CardDims` struct and return a new container.
+### SpiderGame.ts structure
+
+`SpiderGame` follows the same architectural pattern as `KlondikeGame` and shares card-rendering utilities from `src/shared/cardSprites.ts`.
+
+| Section | Methods | Description |
+| ------- | ------- | ----------- |
+| **Lifecycle** | `constructor`, `onResize`, `build`, `renderAll` | Same pattern as Klondike. |
+| **Rendering** | `renderStock`, `renderTableau`, `renderHUD` | 10-column tableau, stacked stock visual, sequences/deals HUD. |
+| **UI controls** | `buildNewGameButton`, `buildThemeButton`, `cycleTheme`, `newGame` | Same top-bar buttons. |
+| **Drag & drop** | `startDrag`, `beginDrag`, `onDragMove`, `onDragEnd`, `tryDrop`, `dropOnTableau` | Same pipeline; respects same-suit stack rules. |
+| **Win detection** | `checkWin`, `showWinScreen` | All 8 sequences removed. |
 
 ### Scaling
 
-The canvas always fills the browser window because the PixiJS application is initialised with `resizeTo: window`. Whenever the window is resized the renderer fires a `resize` event which calls `KlondikeGame.onResize()`, triggering a full scene rebuild.
+The canvas always fills the browser window because the PixiJS application is initialised with `resizeTo: window`. Whenever the window is resized the renderer fires a `resize` event which calls the active game's `onResize()`, triggering a full scene rebuild.
 
 All layout values are derived from a single **scale factor**:
 
@@ -60,13 +94,7 @@ All layout values are derived from a single **scale factor**:
 scale = currentViewportWidth / 750
 ```
 
-The number `750` is the design reference width (`BASE_W`). Every `BASE_*` constant in `KlondikeGame.ts` stores a pixel value at that reference width; each is multiplied by `scale` at render time. For example:
-
-```ts
-private get scale(): number   { return this.W / BASE_W; }
-private get cardW(): number   { return Math.round(BASE_CARD_W   * this.scale); }
-private get colSpacing(): number { return Math.round(BASE_COL_SPACING * this.scale); }
-```
+The number `750` is the design reference width (`BASE_W`). Every `BASE_*` constant stores a pixel value at that reference width; each is multiplied by `scale` at render time.
 
 This means:
 - On a 1500 px wide screen, `scale = 2` and all cards are twice as large.
