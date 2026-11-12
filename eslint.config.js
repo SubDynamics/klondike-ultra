@@ -1,7 +1,4 @@
-import js from '@eslint/js';
-import globals from 'globals';
-import reactHooks from 'eslint-plugin-react-hooks';
-import reactRefresh from 'eslint-plugin-react-refresh';
+import prettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
@@ -10,14 +7,12 @@ export default defineConfig([
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
-      js.configs.recommended,
       tseslint.configs.recommended,
-      'prettier',
-      'plugin:@typescript-eslint/recommended'
+      prettier
     ],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser
+      parserOptions: { projectService: true }
     },
     rules: {
       eqeqeq: 'error',
@@ -25,7 +20,6 @@ export default defineConfig([
       'no-alert': 'warn',
       'no-console': 'warn',
       semi: 'off',
-      '@typescript-eslint/semi': 'off',
       '@typescript-eslint/strict-boolean-expressions': 'warn',
       '@typescript-eslint/explicit-function-return-type': 'warn'
     }

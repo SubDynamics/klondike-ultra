@@ -17,6 +17,32 @@ npm run build
 npm run preview
 ```
 
+## Testing and coverage plan
+
+Run `npm run lint` to lint the TypeScript source, `npm test` for the Vitest
+unit tests, and `npm run build` for type-checking and the production build.
+The initial tests cover Klondike tableau placement.
+
+Grow coverage incrementally, prioritising the pure game logic in `Card.ts`,
+`Deck.ts`, `KlondikeState.ts`, and `SpiderState.ts`: first move validation,
+then state transitions (dealing, drawing, recycling, moves, and automatic
+actions), and finally win conditions. Aim for at least 80% line and branch
+coverage across those modules, including legal and illegal moves, boundary
+cases, and state invariants. This is a future target, not a current CI gate;
+add a Vitest-compatible coverage provider and measurement command before
+enforcing it.
+
+Pull requests changing game rules or state should include focused tests for
+the new behaviour, rejected actions, and any relevant regression; bug fixes
+should reproduce the bug in a test. Run lint, tests and build, and describe
+manual checks or explain any justified test omission in the pull request.
+UI display is primarily play-tested and is not included in the unit coverage
+target. A higher-risk interaction is drag-and-drop: a future browser integration
+test should drag a legal card or stack to a valid destination and verify both
+the rendered positions and game state, then attempt an invalid drop and verify
+the cards return unchanged. Exercise mouse and touch input and a resized
+viewport to catch hit-area and coordinate regressions.
+
 ## How to Play
 
 At startup a game-selection menu lets you choose **Klondike** or **Spider**.
