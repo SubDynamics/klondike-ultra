@@ -577,6 +577,21 @@ export class KlondikeGame {
       views.push(dv);
     }
 
+    if (fromCol >= 0) {
+      for (const view of this.tableauViews[fromCol].slice(fromRow)) {
+        view.renderable = false;
+      }
+    } else if (fromFoundation < 0) {
+      const previous = this.state.waste[this.state.waste.length - 2];
+      topView.parent!.addChildAt(
+        previous
+          ? new CardView(previous, this.theme, this.dims)
+          : makeEmptySlot(this.theme, this.dims),
+        0
+      );
+      topView.renderable = false;
+    }
+
     dragContainer.x = globalPos.x;
     dragContainer.y = globalPos.y;
 
