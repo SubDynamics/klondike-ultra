@@ -19,8 +19,9 @@ npm run preview
 
 ## Testing and coverage plan
 
-Run `npm test` for the Vitest unit tests and `npm run build` for type-checking
-and the production build. The initial tests cover Klondike tableau placement.
+Run `npm run lint` to lint the TypeScript source, `npm test` for the Vitest
+unit tests, and `npm run build` for type-checking and the production build.
+The initial tests cover Klondike tableau placement.
 
 Grow coverage incrementally, prioritising the pure game logic in `Card.ts`,
 `Deck.ts`, `KlondikeState.ts`, and `SpiderState.ts`: first move validation,
@@ -33,7 +34,7 @@ enforcing it.
 
 Pull requests changing game rules or state should include focused tests for
 the new behaviour, rejected actions, and any relevant regression; bug fixes
-should reproduce the bug in a test. Run the tests and build, and describe
+should reproduce the bug in a test. Run lint, tests and build, and describe
 manual checks or explain any justified test omission in the pull request.
 UI display is primarily play-tested and is not included in the unit coverage
 target. A higher-risk interaction is drag-and-drop: a future browser integration
