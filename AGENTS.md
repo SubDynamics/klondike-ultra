@@ -30,8 +30,8 @@ instruction files as short entrypoints that refer back here.
 
 - Install dependencies with `npm ci` when needed.
 - Run `npm run build` to type-check and build the application.
+- Run `npm test` for the Vitest unit tests.
 - `npm run dev` starts the local development server; `npm run preview` serves a
   production build.
-- There are currently no test or lint scripts in `package.json`. Do not assume
-  tests exist; validate focused changes with the available build command and
-  manual checks as appropriate.
+- There is currently no lint script in `package.json`. Validate focused changes
+  with the available build and test commands and manual checks as appropriate.
