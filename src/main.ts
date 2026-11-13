@@ -26,6 +26,12 @@ function isColorTheme(value: unknown): value is ColorTheme {
   );
 }
 
+/**
+ * Loads theme modules and collects their valid theme exports.
+ * Falls back to the default theme if none are found.
+ *
+ * @returns The available colour themes.
+ */
 function loadThemes(): ColorTheme[] {
   const themeModules = import.meta.glob('./themes/*.ts', { eager: true });
   const themes: ColorTheme[] = [];
@@ -229,6 +235,11 @@ function showGameMenu(
   });
 }
 
+/**
+ * Loads application assets, initializes PixiJS, and starts the selected game.
+ *
+ * @returns A promise that resolves after the selected game is initialized.
+ */
 async function main(): Promise<void> {
   // Register suit icons with Pixi's Assets system
   await Assets.load([
