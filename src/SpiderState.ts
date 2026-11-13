@@ -176,7 +176,10 @@ export function canPickUpStack(pile: Card[], fromRow: number): boolean {
  * @param movingCard - The bottommost card of the stack being moved.
  * @param pile       - The destination tableau column.
  */
-export function canPlaceOnSpiderTableau(movingCard: Card, pile: Card[]): boolean {
+export function canPlaceOnSpiderTableau(
+  movingCard: Card,
+  pile: Card[]
+): boolean {
   if (pile.length === 0) return true; // any card may go on an empty column
   const top = pile[pile.length - 1];
   if (!top.faceUp) return false;
@@ -235,7 +238,10 @@ export function moveSpiderStack(
  * @param col   - Column index to inspect (0–9).
  * @returns     `true` if a complete sequence was found and removed.
  */
-export function checkAndRemoveSequence(state: SpiderState, col: number): boolean {
+export function checkAndRemoveSequence(
+  state: SpiderState,
+  col: number
+): boolean {
   const pile = state.tableau[col];
   if (pile.length < 13) return false;
 

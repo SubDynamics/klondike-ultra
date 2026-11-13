@@ -70,7 +70,13 @@ export function makeCardBack(theme: ColorTheme, dims: CardDims): Container {
     .stroke({ color: theme.cardBorderColor, width: 1 });
   // Inner border inset by half the corner radius for a balanced decorative look.
   const inset = Math.round(r / 2);
-  g.roundRect(inset, inset, w - inset * 2, h - inset * 2, Math.max(r - 2, 2)).stroke({
+  g.roundRect(
+    inset,
+    inset,
+    w - inset * 2,
+    h - inset * 2,
+    Math.max(r - 2, 2)
+  ).stroke({
     color: theme.cardInteriorStrokeColor,
     width: 1
   });
@@ -88,10 +94,16 @@ export function makeCardBack(theme: ColorTheme, dims: CardDims): Container {
  * @param dims  - Scaled card dimensions.
  * @returns     A new `Container` holding the card-face graphics and text.
  */
-export function makeCardFace(card: Card, theme: ColorTheme, dims: CardDims): Container {
+export function makeCardFace(
+  card: Card,
+  theme: ColorTheme,
+  dims: CardDims
+): Container {
   const { w, h, r } = dims;
   const c = new Container();
-  const textColor = card.isRed ? theme.playingCardsRed : theme.playingCardsBlack;
+  const textColor = card.isRed
+    ? theme.playingCardsRed
+    : theme.playingCardsBlack;
   const g = new Graphics();
   g.roundRect(0, 0, w, h, r)
     .fill({ color: theme.playingCardsBackground })
@@ -146,7 +158,11 @@ export function makeCardFace(card: Card, theme: ColorTheme, dims: CardDims): Con
  *                (e.g. `'↺'`, `'♠'`, or `'K'`).
  * @returns     A new `Container` holding the slot graphics and optional label.
  */
-export function makeEmptySlot(theme: ColorTheme, dims: CardDims, label = ''): Container {
+export function makeEmptySlot(
+  theme: ColorTheme,
+  dims: CardDims,
+  label = ''
+): Container {
   const { w, h, r } = dims;
   const c = new Container();
   const g = new Graphics();

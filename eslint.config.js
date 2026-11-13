@@ -6,10 +6,7 @@ export default defineConfig([
   globalIgnores(['dist']),
   {
     files: ['**/*.{ts,tsx}'],
-    extends: [
-      tseslint.configs.recommended,
-      prettier
-    ],
+    extends: [tseslint.configs.recommended, prettier],
     languageOptions: {
       ecmaVersion: 2020,
       parserOptions: { projectService: true }

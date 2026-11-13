@@ -126,7 +126,12 @@ export class SpiderGame {
    * @param suitMode          - Number of suits to play with: 1, 2, or 4 (default `4`).
    * @param initialThemeIndex - Index of the theme to activate on startup (default `0`).
    */
-  constructor(app: Application, themes: ColorTheme[], suitMode: SpiderSuitMode = 4, initialThemeIndex = 0) {
+  constructor(
+    app: Application,
+    themes: ColorTheme[],
+    suitMode: SpiderSuitMode = 4,
+    initialThemeIndex = 0
+  ) {
     this.app = app;
     this.themes = themes.length > 0 ? themes : [defaultTheme];
     this.suitMode = suitMode;
@@ -345,7 +350,12 @@ export class SpiderGame {
       fontWeight: 'bold'
     });
 
-    const suitLabel = this.suitMode === 1 ? '1-Suit' : this.suitMode === 2 ? '2-Suit' : '4-Suit';
+    const suitLabel =
+      this.suitMode === 1
+        ? '1-Suit'
+        : this.suitMode === 2
+          ? '2-Suit'
+          : '4-Suit';
     const seqText = new Text({
       text: `${suitLabel} · Sequences: ${this.state.completedSequences}/${SPIDER_SEQUENCES_TO_WIN}`,
       style
@@ -569,7 +579,9 @@ export class SpiderGame {
       const cx = this.tableauXStart + col * this.colSpacing;
       const pile = this.state.tableau[col];
       const colHeight = this.tableauColumnHeight(col);
-      const dropZoneExpansion = Math.round(BASE_DROP_ZONE_EXPANSION * this.scale);
+      const dropZoneExpansion = Math.round(
+        BASE_DROP_ZONE_EXPANSION * this.scale
+      );
       const dropZoneBottom = Math.round(BASE_DROP_ZONE_BOTTOM * this.scale);
 
       if (
@@ -602,7 +614,10 @@ export class SpiderGame {
     const cards = this.drag.views.map((v) => v.card);
     const movingCard = cards[0];
     const pile = this.state.tableau[col];
-    if (col !== this.drag.fromCol && canPlaceOnSpiderTableau(movingCard, pile)) {
+    if (
+      col !== this.drag.fromCol &&
+      canPlaceOnSpiderTableau(movingCard, pile)
+    ) {
       moveSpiderStack(this.state, this.drag.fromCol, this.drag.fromRow, col);
       this.drag = null;
       this.renderAll();

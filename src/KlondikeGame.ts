@@ -679,7 +679,9 @@ export class KlondikeGame {
       const pile = this.state.tableau[col];
       const colHeight = this.tableauHeight(col);
       const cy = colHeight;
-      const dropZoneExpansion = Math.round(BASE_DROP_ZONE_EXPANSION * this.scale);
+      const dropZoneExpansion = Math.round(
+        BASE_DROP_ZONE_EXPANSION * this.scale
+      );
       const dropZoneBottom = Math.round(BASE_DROP_ZONE_BOTTOM * this.scale);
 
       if (

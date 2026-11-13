@@ -1,4 +1,11 @@
-import { Application, Assets, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import {
+  Application,
+  Assets,
+  Container,
+  Graphics,
+  Text,
+  TextStyle
+} from 'pixi.js';
 import { KlondikeGame } from './KlondikeGame';
 import { SpiderGame } from './SpiderGame';
 import type { SpiderSuitMode } from './SpiderState';
@@ -47,14 +54,19 @@ type MenuChoice = 'klondike' | { type: 'spider'; suits: SpiderSuitMode };
  * @param themes - Array of loaded colour themes; the first theme styles the menu.
  * @returns      A promise resolving to the chosen game.
  */
-function showGameMenu(app: Application, themes: ColorTheme[]): Promise<MenuChoice> {
+function showGameMenu(
+  app: Application,
+  themes: ColorTheme[]
+): Promise<MenuChoice> {
   return new Promise((resolve) => {
     const theme = themes[0] ?? defaultTheme;
 
     // Background
     const overlay = new Container();
     const bg = new Graphics();
-    bg.rect(0, 0, app.screen.width, app.screen.height).fill({ color: theme.feltGreenBg });
+    bg.rect(0, 0, app.screen.width, app.screen.height).fill({
+      color: theme.feltGreenBg
+    });
     overlay.addChild(bg);
 
     const W = app.screen.width;
@@ -78,7 +90,10 @@ function showGameMenu(app: Application, themes: ColorTheme[]): Promise<MenuChoic
       fontSize: Math.round(Math.min(W, H) * 0.03),
       fill: theme.emptySlotTextColor
     });
-    const subtitle = new Text({ text: 'Choose a game to play', style: subStyle });
+    const subtitle = new Text({
+      text: 'Choose a game to play',
+      style: subStyle
+    });
     subtitle.anchor.set(0.5, 0);
     subtitle.x = W / 2;
     subtitle.y = title.y + title.height + H * 0.02;
@@ -169,15 +184,20 @@ function showGameMenu(app: Application, themes: ColorTheme[]): Promise<MenuChoic
     const suitButtons = new Container();
     suitButtons.visible = false;
 
-    const suitOptions: { suits: SpiderSuitMode; label: string; sub: string }[] = [
-      { suits: 1, label: '1 Suit', sub: 'Easiest — Spades only' },
-      { suits: 2, label: '2 Suits', sub: 'Medium — Spades & Hearts' },
-      { suits: 4, label: '4 Suits', sub: 'Hardest — All suits' }
-    ];
+    const suitOptions: { suits: SpiderSuitMode; label: string; sub: string }[] =
+      [
+        { suits: 1, label: '1 Suit', sub: 'Easiest — Spades only' },
+        { suits: 2, label: '2 Suits', sub: 'Medium — Spades & Hearts' },
+        { suits: 4, label: '4 Suits', sub: 'Hardest — All suits' }
+      ];
 
     const totalSuitW = btnW * 3 + gap * 2;
     suitOptions.forEach(({ suits, label, sub }, i) => {
-      const btn = makeButton(label, sub, W / 2 - totalSuitW / 2 + i * (btnW + gap));
+      const btn = makeButton(
+        label,
+        sub,
+        W / 2 - totalSuitW / 2 + i * (btnW + gap)
+      );
       btn.on('pointerdown', () => {
         app.stage.removeChildren();
         resolve({ type: 'spider', suits });
