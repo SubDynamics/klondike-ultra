@@ -43,6 +43,25 @@ the rendered positions and game state, then attempt an invalid drop and verify
 the cards return unchanged. Exercise mouse and touch input and a resized
 viewport to catch hit-area and coordinate regressions.
 
+## Code documentation
+
+Use JSDoc comments for every exported function and class. Also add JSDoc to
+local functions when their implementation has elevated complexity, such as
+multiple loops or many local variables. Describe the function's purpose and,
+where applicable, its parameters and return value:
+
+```ts
+/**
+ * Returns a new collection containing the selected items.
+ *
+ * @param items - The items to filter.
+ * @returns The selected items.
+ */
+export function selectItems(items: Item[]): Item[] {
+  // ...
+}
+```
+
 ## How to Play
 
 At startup a game-selection menu lets you choose **Klondike** or **Spider**.

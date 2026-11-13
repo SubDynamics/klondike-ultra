@@ -23,6 +23,10 @@ instruction files as short entrypoints that refer back here.
   quotes, and no trailing commas.
 - TypeScript is configured in strict mode. Preserve type safety and avoid
   introducing unused locals or parameters.
+- Add JSDoc comments to all exported functions and classes, and to local
+  functions with elevated complexity (for example, multiple loops or many
+  local variables). Document purpose, parameters, and return values as
+  applicable.
 - Update `README.md` when a change affects documented gameplay, setup, or
   architecture.
 
