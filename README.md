@@ -91,6 +91,7 @@ At startup a game-selection menu lets you choose **Klondike** or **Spider**.
 | `src/Card.ts`               | Card model — suit, rank, face-up state, label/symbol helpers                           |
 | `src/Deck.ts`               | Deck creation and Fisher-Yates shuffle                                                 |
 | `src/shared/cardSprites.ts` | Shared PixiJS card-rendering utilities: `CardDims`, `makeCardBack`, `makeCardFace`, `makeEmptySlot`, `CardView` |
+| `src/shared/buttons.ts`     | Shared themed, scaled top-bar button creation                                          |
 | `src/types/themeTypes.ts`   | `ColorTheme` interface shared by all game renderers                                    |
 | `src/themes/`               | Theme objects implementing `ColorTheme`                                                |
 

@@ -30,6 +30,7 @@ import {
 import { Card } from './Card';
 import type { ColorTheme } from './types/themeTypes';
 import { defaultTheme } from './themes/defaultTheme';
+import { makeButton } from './shared/buttons';
 import {
   type SpiderState,
   type SpiderSuitMode,
@@ -262,60 +263,18 @@ export class SpiderGame {
   /** Adds a "New Game" button to the scene. */
   private buildNewGameButton(): void {
     const s = this.scale;
-    const btnW = Math.round(90 * s);
-    const btnH = Math.round(28 * s);
-    const btn = new Container();
-    const bg = new Graphics();
-    bg.roundRect(0, 0, btnW, btnH, Math.round(6 * s))
-      .fill({ color: this.theme.newGameButtonFill })
-      .stroke({ color: this.theme.newGameButtonStroke, width: 1 });
-    const label = new Text({
-      text: 'New Game',
-      style: new TextStyle({
-        fontSize: Math.round(13 * s),
-        fill: this.theme.newGameButtonTextColor,
-        fontWeight: 'bold'
-      })
-    });
-    label.anchor.set(0.5, 0.5);
-    label.x = btnW / 2;
-    label.y = btnH / 2;
-    btn.addChild(bg, label);
+    const btn = makeButton(this.theme, s, 'New Game', 90, 13, () => this.newGame());
     btn.x = this.W - Math.round(105 * s);
     btn.y = Math.round(8 * s);
-    btn.eventMode = 'static';
-    btn.cursor = 'pointer';
-    btn.on('pointerdown', () => this.newGame());
     this.mainLayer.addChild(btn);
   }
 
   /** Adds a "Theme: …" cycle button to the scene. */
   private buildThemeButton(): void {
     const s = this.scale;
-    const btnW = Math.round(145 * s);
-    const btnH = Math.round(28 * s);
-    const btn = new Container();
-    const bg = new Graphics();
-    bg.roundRect(0, 0, btnW, btnH, Math.round(6 * s))
-      .fill({ color: this.theme.newGameButtonFill })
-      .stroke({ color: this.theme.newGameButtonStroke, width: 1 });
-    const label = new Text({
-      text: `Theme: ${this.theme.name}`,
-      style: new TextStyle({
-        fontSize: Math.round(12 * s),
-        fill: this.theme.newGameButtonTextColor,
-        fontWeight: 'bold'
-      })
-    });
-    label.anchor.set(0.5, 0.5);
-    label.x = btnW / 2;
-    label.y = btnH / 2;
-    btn.addChild(bg, label);
+    const btn = makeButton(this.theme, s, `Theme: ${this.theme.name}`, 145, 12, () => this.cycleTheme());
     btn.x = this.W - Math.round(260 * s);
     btn.y = Math.round(8 * s);
-    btn.eventMode = 'static';
-    btn.cursor = 'pointer';
-    btn.on('pointerdown', () => this.cycleTheme());
     this.mainLayer.addChild(btn);
   }
 
