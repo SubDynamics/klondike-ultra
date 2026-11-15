@@ -125,13 +125,17 @@ export function foundationIndexForSuit(suit: Suit): number {
 // ---------- actions ----------
 
 /**
- * Draws {@link DRAW_COUNT} cards from the stock to the waste pile, turning them
+ * Draws up to `drawCount` cards from the stock to the waste pile, turning them
  * face-up. If the stock is empty, the entire waste pile is recycled back into
  * the stock (face-down) and no cards are drawn this call.
  *
  * @param state - The game state to mutate.
+ * @param drawCount - Number of cards to draw (default: one).
  */
-export function drawFromStock(state: GameState): void {
+export function drawFromStock(
+  state: GameState,
+  drawCount: 1 | 3 = DRAW_COUNT
+): void {
   if (state.stock.length === 0) {
     // Recycle
     state.stock = state.waste.reverse();
@@ -139,7 +143,7 @@ export function drawFromStock(state: GameState): void {
     state.stock.forEach((c) => (c.faceUp = false));
     return;
   }
-  const toDraw = Math.min(DRAW_COUNT, state.stock.length);
+  const toDraw = Math.min(drawCount, state.stock.length);
   for (let i = 0; i < toDraw; i++) {
     const card = state.stock.pop()!;
     card.faceUp = true;
