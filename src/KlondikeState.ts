@@ -37,6 +37,8 @@ export interface GameState {
   stock: Card[];
   /** Cards drawn from the stock and available for play (last element is "on top"). */
   waste: Card[];
+  /** Number of cards visible in the current waste fan. */
+  wasteVisibleCount: number;
 }
 
 /**
@@ -71,7 +73,7 @@ export function createGameState(): GameState {
   const waste: Card[] = [];
   const foundations: Card[][] = [[], [], [], []];
 
-  return { tableau, foundations, stock, waste };
+  return { tableau, foundations, stock, waste, wasteVisibleCount: 0 };
 }
 
 // ---------- move validation ----------
@@ -140,6 +142,7 @@ export function drawFromStock(
     // Recycle
     state.stock = state.waste.reverse();
     state.waste = [];
+    state.wasteVisibleCount = 0;
     state.stock.forEach((c) => (c.faceUp = false));
     return;
   }
@@ -149,6 +152,23 @@ export function drawFromStock(
     card.faceUp = true;
     state.waste.push(card);
   }
+  state.wasteVisibleCount = toDraw;
+}
+
+/**
+ * Removes the top waste card and updates the visible fan.
+ *
+ * @param state - The game state to mutate.
+ * @returns The removed card, or undefined if the waste is empty.
+ */
+export function removeTopWasteCard(state: GameState): Card | undefined {
+  const card = state.waste.pop();
+  if (card) {
+    state.wasteVisibleCount = state.waste.length === 0
+      ? 0
+      : Math.max(1, state.wasteVisibleCount - 1);
+  }
+  return card;
 }
 
 /**
@@ -163,7 +183,7 @@ export function moveWasteToFoundation(state: GameState): boolean {
   const card = state.waste[state.waste.length - 1];
   const fi = foundationIndexForSuit(card.suit);
   if (canPlaceOnFoundation(card, state.foundations[fi])) {
-    state.waste.pop();
+    removeTopWasteCard(state);
     state.foundations[fi].push(card);
     return true;
   }
@@ -181,7 +201,7 @@ export function moveWasteToTableau(state: GameState, col: number): boolean {
   if (state.waste.length === 0) return false;
   const card = state.waste[state.waste.length - 1];
   if (canPlaceOnTableau(card, state.tableau[col])) {
-    state.waste.pop();
+    removeTopWasteCard(state);
     state.tableau[col].push(card);
     return true;
   }

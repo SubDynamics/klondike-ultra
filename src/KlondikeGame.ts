@@ -14,6 +14,7 @@ import {
   createGameState,
   drawFromStock,
   moveWasteToFoundation,
+  removeTopWasteCard,
   moveTableauToFoundation,
   canPlaceOnTableau,
   canPlaceOnFoundation,
@@ -511,7 +512,9 @@ export class KlondikeGame {
       return;
     }
 
-    const visible = this.state.waste.slice(-this.drawCount);
+    const visible = this.state.waste.slice(
+      -Math.min(this.drawCount, this.state.wasteVisibleCount)
+    );
     visible.forEach((card, i) => {
       const cv = new CardView(card, this.theme, this.dims);
       cv.x = Math.round(i * BASE_WASTE_OFFSET * this.scale);
@@ -708,7 +711,7 @@ export class KlondikeGame {
       }
     } else if (fromFoundation < 0) {
       const previous = this.state.waste[this.state.waste.length - 2];
-      if (this.drawCount === 1 || !previous) {
+      if (this.drawCount === 1 || this.state.wasteVisibleCount === 1) {
         topView.parent!.addChildAt(
           previous
             ? new CardView(previous, this.theme, this.dims)
@@ -858,7 +861,7 @@ export class KlondikeGame {
       this.state.foundations[fromFoundation].pop();
     } else {
       // From waste
-      this.state.waste.pop();
+      removeTopWasteCard(this.state);
     }
   }
 
