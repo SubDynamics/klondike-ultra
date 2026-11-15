@@ -41,6 +41,7 @@ const BASE_FACE_UP_OFFSET = 28;
 const BASE_FACE_DOWN_OFFSET = 14;
 const BASE_STOCK_X = 20;
 const BASE_WASTE_X = 130;
+const BASE_WASTE_OFFSET = 52;
 const BASE_TOP_Y = 40;
 const BASE_FOUNDATION_X_START = 330;
 const BASE_DROP_ZONE_EXPANSION = 30;
@@ -98,6 +99,8 @@ export class KlondikeGame {
   private state: GameState;
   private themes: ColorTheme[];
   private currentThemeIndex: number;
+  private drawCount: 1 | 3 = 1;
+  private settingsOpen = false;
   private tableauViews: CardView[][] = [];
   private drag: DragInfo | null = null;
   private mainLayer!: Container;
@@ -293,6 +296,125 @@ export class KlondikeGame {
     this.mainLayer.addChild(btn);
   }
 
+  /** Adds the settings button to the top bar. */
+  private buildSettingsButton(): void {
+    const s = this.scale;
+    const btnW = Math.round(85 * s);
+    const btnH = Math.round(28 * s);
+    const btn = new Container();
+    const bg = new Graphics();
+    bg.roundRect(0, 0, btnW, btnH, Math.round(6 * s))
+      .fill({ color: this.theme.newGameButtonFill })
+      .stroke({ color: this.theme.newGameButtonStroke, width: 1 });
+    const label = new Text({
+      text: 'Settings',
+      style: new TextStyle({
+        fontSize: Math.round(13 * s),
+        fill: this.theme.newGameButtonTextColor,
+        fontWeight: 'bold'
+      })
+    });
+    label.anchor.set(0.5);
+    label.position.set(btnW / 2, btnH / 2);
+    btn.addChild(bg, label);
+    btn.position.set(this.W - Math.round(355 * s), Math.round(8 * s));
+    btn.eventMode = 'static';
+    btn.cursor = 'pointer';
+    btn.on('pointerdown', () => {
+      this.settingsOpen = true;
+      this.renderAll();
+    });
+    this.mainLayer.addChild(btn);
+  }
+
+  /** Renders the settings overlay and its list of gameplay options. */
+  private renderSettings(): void {
+    const options = [
+      {
+        label: '3-Card draw',
+        enabled: this.drawCount === 3,
+        toggle: () => {
+          this.drawCount = this.drawCount === 3 ? 1 : 3;
+        }
+      }
+    ];
+    const s = Math.min(this.scale, this.H / (160 + options.length * 50));
+    const panelW = 340 * s;
+    const panelH = (140 + options.length * 50) * s;
+    const x = (this.W - panelW) / 2;
+    const y = (this.H - panelH) / 2;
+    const overlay = new Container();
+    overlay.zIndex = 1000;
+    const backdrop = new Graphics();
+    backdrop.rect(0, 0, this.W, this.H).fill({ color: 0x000000, alpha: 0.65 });
+    backdrop.eventMode = 'static';
+    overlay.addChild(backdrop);
+
+    const panel = new Graphics();
+    panel.roundRect(x, y, panelW, panelH, 12 * s)
+      .fill({ color: this.theme.winScreenPanelFill })
+      .stroke({ color: this.theme.winScreenPanelStroke, width: 2 * s });
+    panel.eventMode = 'static';
+    overlay.addChild(panel);
+
+    const title = new Text({
+      text: 'Settings',
+      style: new TextStyle({
+        fontSize: 24 * s,
+        fill: this.theme.lightTextColor,
+        fontWeight: 'bold'
+      })
+    });
+    title.anchor.set(0.5);
+    title.position.set(this.W / 2, y + 30 * s);
+    overlay.addChild(title);
+
+    options.forEach((option, i) => {
+      const row = new Container();
+      const rowBg = new Graphics();
+      rowBg.roundRect(0, 0, 300 * s, 40 * s, 6 * s)
+        .fill({ color: this.theme.newGameButtonFill })
+        .stroke({ color: this.theme.newGameButtonStroke, width: s });
+      const label = new Text({
+        text: `${option.label}: ${option.enabled ? 'On' : 'Off'}`,
+        style: new TextStyle({
+          fontSize: 16 * s,
+          fill: this.theme.newGameButtonTextColor
+        })
+      });
+      label.anchor.set(0, 0.5);
+      label.position.set(12 * s, 20 * s);
+      row.addChild(rowBg, label);
+      row.position.set(x + 20 * s, y + (55 + i * 50) * s);
+      row.eventMode = 'static';
+      row.cursor = 'pointer';
+      row.on('pointerdown', () => {
+        option.toggle();
+        this.renderAll();
+      });
+      overlay.addChild(row);
+    });
+
+    const close = new Text({
+      text: 'Close',
+      style: new TextStyle({
+        fontSize: 16 * s,
+        fill: this.theme.lightTextColor,
+        fontWeight: 'bold'
+      })
+    });
+    close.anchor.set(0.5);
+    close.position.set(this.W / 2, y + panelH - 25 * s);
+    close.eventMode = 'static';
+    close.cursor = 'pointer';
+    close.on('pointerdown', () => {
+      this.settingsOpen = false;
+      this.renderAll();
+    });
+    overlay.addChild(close);
+    this.mainLayer.addChild(overlay);
+  }
+
   /** Advances to the next available theme and rebuilds the scene. No-op when only one theme is loaded. */
   private cycleTheme(): void {
     if (this.themes.length <= 1) return;
@@ -342,15 +464,17 @@ export class KlondikeGame {
 
     this.buildNewGameButton();
     this.buildThemeButton();
+    this.buildSettingsButton();
     this.renderStock();
     this.renderWaste();
     this.renderFoundations();
     this.renderTableau();
+    if (this.settingsOpen) this.renderSettings();
   }
 
   /**
    * Renders the stock pile (top-left). Shows the card back while cards remain;
-   * shows a recycle `↺` slot when empty. Clicking draws one card to the waste pile.
+   * shows a recycle `↺` slot when empty. Clicking draws to the waste pile.
    */
   private renderStock(): void {
     const sc = new Container();
@@ -359,7 +483,7 @@ export class KlondikeGame {
     sc.eventMode = 'static';
     sc.cursor = 'pointer';
     sc.on('pointerdown', () => {
-      drawFromStock(this.state);
+      drawFromStock(this.state, this.drawCount);
       this.renderAll();
     });
 
@@ -373,7 +497,7 @@ export class KlondikeGame {
 
   /**
    * Renders the waste pile (top area, next to stock).
-   * Shows only the top card (face-up) which can be dragged or tapped to auto-play.
+   * Fans up to three face-up cards in three-card mode; only the top is interactive.
    * Shows an empty slot when the waste pile is empty.
    */
   private renderWaste(): void {
@@ -387,19 +511,20 @@ export class KlondikeGame {
       return;
     }
 
-    // Show top waste card
-    const card = this.state.waste[this.state.waste.length - 1];
-    const cv = new CardView(card, this.theme, this.dims);
-    wc.addChild(cv);
-
-    // Make draggable
-    cv.eventMode = 'static';
-    cv.cursor = 'pointer';
-    cv.on('pointerdown', (e: FederatedPointerEvent) =>
-      this.startDragWaste(e, cv)
-    );
-    // Tap to auto-send to foundation
-    cv.on('pointertap', () => this.autoPlayWaste());
+    const visible = this.state.waste.slice(-this.drawCount);
+    visible.forEach((card, i) => {
+      const cv = new CardView(card, this.theme, this.dims);
+      cv.x = Math.round(i * BASE_WASTE_OFFSET * this.scale);
+      wc.addChild(cv);
+      if (i === visible.length - 1) {
+        cv.eventMode = 'static';
+        cv.cursor = 'pointer';
+        cv.on('pointerdown', (e: FederatedPointerEvent) =>
+          this.startDragWaste(e, cv)
+        );
+        cv.on('pointertap', () => this.autoPlayWaste());
+      }
+    });
   }
 
   /**
@@ -583,12 +708,14 @@ export class KlondikeGame {
       }
     } else if (fromFoundation < 0) {
       const previous = this.state.waste[this.state.waste.length - 2];
-      topView.parent!.addChildAt(
-        previous
-          ? new CardView(previous, this.theme, this.dims)
-          : makeEmptySlot(this.theme, this.dims),
-        0
-      );
+      if (this.drawCount === 1 || !previous) {
+        topView.parent!.addChildAt(
+          previous
+            ? new CardView(previous, this.theme, this.dims)
+            : makeEmptySlot(this.theme, this.dims),
+          0
+        );
+      }
       topView.renderable = false;
     }
 
