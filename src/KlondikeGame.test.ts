@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
-import { Card } from './Card';
+import { Card, SUITS } from './Card';
 import { KlondikeGame } from './KlondikeGame';
 import {
   createGameState,
@@ -149,6 +149,32 @@ describe('click to foundation', () => {
     expect(game.state.tableau[1].at(-1)).toBe(card);
     expect(game.state.waste).toEqual([]);
     expect(ticker.add).not.toHaveBeenCalled();
+  });
+
+  it.each(SUITS)('keeps %s in its designated foundation for subsequent clicks', (suit) => {
+    const { game, event } = setup();
+    const fi = SUITS.indexOf(suit);
+    const ace = new Card(suit, 1, true);
+    const two = new Card(suit, 2, true);
+    game.state.waste = [two, ace];
+    game.state.wasteVisibleCount = 1;
+    const view = new Container();
+    view.position.set(130, 40);
+    game.mainLayer.addChild(view);
+
+    game.startDragWaste(event(140, 50, 'pointerdown'), view);
+    game.onDragEnd(event(340 + ((fi + 1) % SUITS.length) * 100, 50));
+    expect(game.state.waste).toEqual([two, ace]);
+    expect(game.state.foundations.every((pile) => pile.length === 0)).toBe(true);
+
+    game.startDragWaste(event(140, 50, 'pointerdown'), view);
+    game.onDragEnd(event(340 + fi * 100, 50));
+    expect(game.state.foundations[fi]).toEqual([ace]);
+
+    game.startDragWaste(event(140, 50, 'pointerdown'), view);
+    game.onDragEnd(event(140, 50));
+    expect(game.state.foundations[fi]).toEqual([ace, two]);
+    expect(game.state.waste).toEqual([]);
   });
 
   it('cancels the animation when the board is redrawn', () => {

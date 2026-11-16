@@ -794,6 +794,7 @@ export class KlondikeGame {
       if (this.hitTest(gx, gy, fx, this.topY)) {
         if (
           cards.length === 1 &&
+          fi === foundationIndexForSuit(card.suit) &&
           canPlaceOnFoundation(card, this.state.foundations[fi])
         ) {
           // Remove from source

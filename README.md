@@ -71,7 +71,7 @@ At startup a game-selection menu lets you choose **Klondike** or **Spider**.
 - **Stock** (top-left): Click to draw to the waste pile. Click again when empty to recycle.
 - **Waste**: The top card can be dragged to the tableau or foundations, or tapped to auto-send to a foundation.
 - **Settings**: Enable **3-Card draw** to draw up to three cards at a time and fan the waste. Only the top card is playable; playing it exposes the next card without drawing from stock. Once the fan is played, the top card of the previous waste is revealed. The setting takes effect immediately and remains selected for new games.
-- **Foundations** (top-right 4 slots): Build up each suit from Ace to King.
+- **Foundations** (top-right 4 slots): Build up each suit from Ace to King in its marked slot.
 - **Tableau** (7 columns): Build down in alternating colours. Only Kings can start an empty column. Click or tap the bottom card of a column to send it to its foundation when eligible.
 - **New Game** button: Start a fresh game at any time.
 
