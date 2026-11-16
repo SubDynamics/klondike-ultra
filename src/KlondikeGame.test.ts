@@ -31,7 +31,8 @@ describe('click to foundation', () => {
     const ticker = { add: vi.fn(), remove: vi.fn() };
     const prototype = KlondikeGame.prototype as unknown as { build: () => void };
     const build = vi.spyOn(prototype, 'build').mockImplementation(() => {});
-    const app = { stage, ticker, screen: { width: 750, height: 800 } };
+    const canvas = new EventTarget();
+    const app = { stage, ticker, canvas, screen: { width: 750, height: 800 } };
     const game = new KlondikeGame(app as never, [defaultTheme]) as unknown as {
       state: ReturnType<typeof createGameState>;
       mainLayer: Container;
@@ -67,7 +68,7 @@ describe('click to foundation', () => {
     game.state.waste = [];
     const event = (x: number, y: number, type = 'pointerup', pointerId = 1) =>
       ({ global: { x, y }, type, pointerId });
-    return { game, ticker, event };
+    return { game, ticker, event, canvas };
   }
 
   it('moves and animates the top waste card, then checks for a win', () => {
@@ -164,6 +165,23 @@ describe('click to foundation', () => {
     expect(ticker.remove).toHaveBeenCalledWith(animate);
     expect(game.state.foundations[2]).toEqual([card]);
     expect(game.mainLayer.eventMode).toBe('auto');
+  });
+
+  it('restores a cancelled drag and allows the next pointer to play', () => {
+    const { game, event, canvas } = setup();
+    const card = new Card('spades', 1, true);
+    game.state.waste = [card];
+    game.state.wasteVisibleCount = 1;
+    const view = new Container();
+    game.mainLayer.addChild(view);
+    game.startDragWaste(event(5, 5, 'pointerdown'), view);
+    const cancel = new Event('pointercancel');
+    Object.defineProperty(cancel, 'pointerId', { value: 1 });
+    canvas.dispatchEvent(cancel);
+    expect(game.state.waste).toEqual([card]);
+    game.startDragWaste(event(5, 5, 'pointerdown', 2), view);
+    game.onDragEnd(event(5, 5, 'pointerup', 2));
+    expect(game.state.foundations[0]).toEqual([card]);
   });
 });
 

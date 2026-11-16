@@ -604,6 +604,7 @@ export class KlondikeGame {
     this.app.stage.off('pointermove', this.onDragMove, this);
     this.app.stage.off('pointerup', this.onDragEnd, this);
     this.app.stage.off('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.removeEventListener('pointercancel', this.onPointerCancel);
     this.drag = null;
     if (this.animation) {
       this.app.ticker.remove(this.animation);
@@ -720,7 +721,13 @@ export class KlondikeGame {
     this.app.stage.on('pointermove', this.onDragMove, this);
     this.app.stage.on('pointerup', this.onDragEnd, this);
     this.app.stage.on('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.addEventListener('pointercancel', this.onPointerCancel);
   }
+
+  /** Restores the board when the browser cancels the active pointer. */
+  private onPointerCancel = (e: PointerEvent): void => {
+    if (this.drag && e.pointerId === this.drag.pointerId) this.renderAll();
+  };
 
   /** Stage-level handler: repositions the drag container to follow the pointer. */
   private onDragMove = (e: FederatedPointerEvent): void => {
@@ -742,6 +749,7 @@ export class KlondikeGame {
     this.app.stage.off('pointermove', this.onDragMove, this);
     this.app.stage.off('pointerup', this.onDragEnd, this);
     this.app.stage.off('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.removeEventListener('pointercancel', this.onPointerCancel);
 
     if (!drag.moved && e.type !== 'pointerupoutside'
       && this.hitTest(e.global.x, e.global.y, drag.origX, drag.origY)) {
