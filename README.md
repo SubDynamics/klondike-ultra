@@ -71,8 +71,8 @@ At startup a game-selection menu lets you choose **Klondike** or **Spider**.
 - **Stock** (top-left): Click to draw to the waste pile. Click again when empty to recycle.
 - **Waste**: The top card can be dragged to the tableau or foundations, or tapped to auto-send to a foundation.
 - **Settings**: Enable **3-Card draw** to draw up to three cards at a time and fan the waste. Only the top card is playable; playing it exposes the next card without drawing from stock. Once the fan is played, the top card of the previous waste is revealed. The setting takes effect immediately and remains selected for new games.
-- **Foundations** (top-right 4 slots): Build up each suit from Ace to King.
-- **Tableau** (7 columns): Build down in alternating colours. Only Kings can start an empty column.
+- **Foundations** (top-right 4 slots): Build up each suit from Ace to King in its marked slot.
+- **Tableau** (7 columns): Build down in alternating colours. Only Kings can start an empty column. Click or tap the bottom card of a column to send it to its foundation when eligible.
 - **New Game** button: Start a fresh game at any time.
 
 ### Spider
@@ -92,6 +92,7 @@ At startup a game-selection menu lets you choose **Klondike** or **Spider**.
 | `src/Deck.ts`               | Deck creation and Fisher-Yates shuffle                                                 |
 | `src/shared/cardSprites.ts` | Shared PixiJS card-rendering utilities: `CardDims`, `makeCardBack`, `makeCardFace`, `makeEmptySlot`, `CardView` |
 | `src/shared/buttons.ts`     | Shared themed, scaled top-bar button creation                                          |
+| `src/shared/easing.ts`      | Reusable quadratic and sine easing curves for animations                              |
 | `src/types/themeTypes.ts`   | `ColorTheme` interface shared by all game renderers                                    |
 | `src/themes/`               | Theme objects implementing `ColorTheme`                                                |
 
@@ -115,8 +116,8 @@ At startup a game-selection menu lets you choose **Klondike** or **Spider**.
 | **Scaled layout** | `scale`, `cardW`, `cardH`, `dims`, `colSpacing`, … | Read-only getters that derive every pixel value from a single `scale` factor (see _Scaling_ below). |
 | **Rendering** | `renderStock`, `renderWaste`, `renderFoundations`, `renderTableau` | Draw individual areas of the board. Each method creates fresh PixiJS `Container` objects and attaches event listeners. |
 | **UI controls** | `buildNewGameButton`, `buildThemeButton`, `buildSettingsButton`, `renderSettings`, `cycleTheme`, `newGame` | Top-bar buttons and gameplay settings. |
-| **Tap shortcuts** | `autoPlayWaste`, `handleTableauTap` | Move the top waste/tableau card directly to a matching foundation on tap. |
-| **Drag & drop** | `startDragWaste`, `startDragTableau`, `beginDrag`, `onDragMove`, `onDragEnd`, `tryDrop`, `dropOnFoundation`, `dropOnTableau` | Full pointer-drag pipeline: ghost creation → move → drop resolution. |
+| **Tap shortcuts** | `autoPlayDrag` | Animate an eligible top waste/tableau card to its matching foundation on tap. |
+| **Drag & drop** | `startDragWaste`, `startDragTableau`, `beginDrag`, `onDragMove`, `onDragEnd`, `tryDrop` | Full pointer-drag pipeline: ghost creation → move → drop resolution. |
 | **Win detection** | `checkWin`, `showWinScreen` | Check all four foundations and overlay the win screen. |
 
 ### SpiderGame.ts structure

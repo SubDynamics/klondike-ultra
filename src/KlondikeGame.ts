@@ -4,12 +4,14 @@ import {
   Graphics,
   Text,
   TextStyle,
+  Ticker,
   FederatedPointerEvent
 } from 'pixi.js';
 import { Card } from './Card';
 import type { ColorTheme } from './types/themeTypes';
 import { defaultTheme } from './themes/defaultTheme';
 import { makeButton } from './shared/buttons';
+import { easingValue } from './shared/easing';
 import {
   type GameState,
   createGameState,
@@ -19,6 +21,7 @@ import {
   moveTableauToFoundation,
   canPlaceOnTableau,
   canPlaceOnFoundation,
+  foundationIndexForSuit,
   isWon,
   TABLEAU_COUNT,
   FOUNDATION_COUNT
@@ -48,6 +51,8 @@ const BASE_TOP_Y = 40;
 const BASE_FOUNDATION_X_START = 330;
 const BASE_DROP_ZONE_EXPANSION = 30;
 const BASE_DROP_ZONE_BOTTOM = 60;
+const BASE_CLICK_DISTANCE = 6;
+const FOUNDATION_ANIMATION_MS = 250;
 
 // ─── Drag state ───────────────────────────────────────────────────────────────
 interface DragInfo {
@@ -66,6 +71,10 @@ interface DragInfo {
   offY: number;
   /** container that holds the dragged views during drag */
   container: Container;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
 }
 
 // ─── KlondikeGame ─────────────────────────────────────────────────────────────
@@ -92,8 +101,8 @@ interface DragInfo {
  * - _Rendering_: `renderStock`, `renderWaste`, `renderFoundations`, `renderTableau`
  * - _UI controls_: `buildNewGameButton`, `buildThemeButton`, `cycleTheme`, `newGame`
  * - _Interaction_: `startDragWaste`, `startDragTableau`, `beginDrag`,
- *                  `onDragMove`, `onDragEnd`, `tryDrop`, `dropOnFoundation`, `dropOnTableau`
- * - _Tap shortcuts_: `autoPlayWaste`, `handleTableauTap`
+ *                  `onDragMove`, `onDragEnd`, `tryDrop`
+ * - _Tap shortcuts_: `autoPlayDrag`
  * - _Win detection_: `checkWin`, `showWinScreen`
  */
 export class KlondikeGame {
@@ -105,6 +114,8 @@ export class KlondikeGame {
   private settingsOpen = false;
   private tableauViews: CardView[][] = [];
   private drag: DragInfo | null = null;
+  private animation: ((ticker: Ticker) => void) | null = null;
+  private foundationViews: Container[] = [];
   private mainLayer!: Container;
   private dragLayer!: Container;
 
@@ -206,7 +217,9 @@ export class KlondikeGame {
    * layout values are recalculated at the new viewport dimensions.
    */
   onResize(): void {
+    const wasAnimating = !!this.animation;
     this.build();
+    if (wasAnimating) this.checkWin();
   }
 
   // ── Build the scene ──────────────────────────────────────────────────────
@@ -217,6 +230,7 @@ export class KlondikeGame {
    * Invoked on first load, theme change, new game, and viewport resize.
    */
   private build(): void {
+    this.cancelInteraction();
     this.app.stage.removeChildren();
 
     // Background
@@ -396,11 +410,14 @@ export class KlondikeGame {
    * Also cancels any active drag. Called after every game-state change.
    */
   renderAll(): void {
+    const wasAnimating = !!this.animation;
+    this.cancelInteraction();
     this.mainLayer.removeChildren();
     this.dragLayer.removeChildren();
-    this.drag = null;
+    this.mainLayer.eventMode = 'auto';
 
     this.tableauViews = Array.from({ length: TABLEAU_COUNT }, () => []);
+    this.foundationViews = [];
 
     this.buildNewGameButton();
     this.buildThemeButton();
@@ -410,6 +427,7 @@ export class KlondikeGame {
     this.renderFoundations();
     this.renderTableau();
     if (this.settingsOpen) this.renderSettings();
+    if (wasAnimating) this.checkWin();
   }
 
   /**
@@ -464,7 +482,6 @@ export class KlondikeGame {
         cv.on('pointerdown', (e: FederatedPointerEvent) =>
           this.startDragWaste(e, cv)
         );
-        cv.on('pointertap', () => this.autoPlayWaste());
       }
     });
   }
@@ -472,7 +489,7 @@ export class KlondikeGame {
   /**
    * Renders the four foundation slots (top-right).
    * Shows a suit symbol on each empty slot, or the top card when cards have been played.
-   * Each slot also acts as a drop target for drag-and-drop.
+   * Each slot also acts as a drop target for drag-and-drop through `tryDrop`.
    */
   private renderFoundations(): void {
     for (let fi = 0; fi < FOUNDATION_COUNT; fi++) {
@@ -481,6 +498,7 @@ export class KlondikeGame {
       fc.x = x;
       fc.y = this.topY;
       this.mainLayer.addChild(fc);
+      this.foundationViews.push(fc);
 
       const fp = this.state.foundations[fi];
       if (fp.length === 0) {
@@ -491,17 +509,13 @@ export class KlondikeGame {
         fc.addChild(makeCardFace(top, this.theme, this.dims));
       }
 
-      // Drop target
-      fc.eventMode = 'static';
-      fc.on('pointerup', () => this.dropOnFoundation(fi));
     }
   }
 
   /**
    * Renders all seven tableau columns.
    * Each column starts with an empty-slot drop-target at the base.
-   * Face-up cards are interactive (draggable and tappable); face-down cards
-   * are passive drop targets only. Card views are stored in `tableauViews`
+   * Face-up cards are interactive (draggable and tappable). Card views are stored in `tableauViews`
    * for later reference during drag resolution.
    */
   private renderTableau(): void {
@@ -513,8 +527,6 @@ export class KlondikeGame {
       const slot = makeEmptySlot(this.theme, this.dims);
       slot.x = x;
       slot.y = this.tableauY;
-      slot.eventMode = 'static';
-      slot.on('pointerup', () => this.dropOnTableau(col));
       this.mainLayer.addChild(slot);
 
       const colViews: CardView[] = [];
@@ -532,11 +544,6 @@ export class KlondikeGame {
           cv.on('pointerdown', (e: FederatedPointerEvent) =>
             this.startDragTableau(e, col, row, cv)
           );
-          cv.on('pointertap', () => this.handleTableauTap(col, row));
-          cv.on('pointerup', () => this.dropOnTableau(col));
-        } else {
-          cv.eventMode = 'static';
-          cv.on('pointerup', () => this.dropOnTableau(col));
         }
 
         this.mainLayer.addChild(cv);
@@ -550,29 +557,58 @@ export class KlondikeGame {
   // ── Tap handlers ──────────────────────────────────────────────────────────
 
   /**
-   * Handles a tap on the top waste card: attempts to move it directly to a
-   * matching foundation pile. Triggers a re-render and win check on success.
+   * Moves an eligible clicked card to its foundation and animates the result.
+   *
+   * @param drag - The source card and its original position.
+   * @returns Whether the card was moved.
    */
-  private autoPlayWaste(): void {
-    if (moveWasteToFoundation(this.state)) {
-      this.renderAll();
-      this.checkWin();
-    }
+  private autoPlayDrag(drag: DragInfo): boolean {
+    const card = drag.views[0].card;
+    const moved = drag.fromCol < 0
+      ? moveWasteToFoundation(this.state)
+      : drag.fromRow === this.state.tableau[drag.fromCol].length - 1
+        && moveTableauToFoundation(this.state, drag.fromCol);
+    if (!moved) return false;
+
+    const fi = foundationIndexForSuit(card.suit);
+    this.renderAll();
+    const foundation = this.foundationViews[fi];
+    foundation.children[0].visible = false;
+    const pile = this.state.foundations[fi];
+    foundation.addChild(pile.length > 1
+      ? makeCardFace(pile[pile.length - 2], this.theme, this.dims)
+      : makeEmptySlot(this.theme, this.dims, ['♠', '♥', '♦', '♣'][fi]));
+    const view = new CardView(card, this.theme, this.dims);
+    view.position.set(drag.origX, drag.origY);
+    this.dragLayer.addChild(view);
+    this.mainLayer.eventMode = 'none';
+    let elapsed = 0;
+    this.animation = (ticker: Ticker) => {
+      elapsed += ticker.deltaMS;
+      const progress = easingValue('sineInOut', Math.min(elapsed / FOUNDATION_ANIMATION_MS, 1));
+      view.x = drag.origX + (this.foundationXStart + fi * this.colSpacing - drag.origX) * progress;
+      view.y = drag.origY + (this.topY - drag.origY) * progress;
+      if (elapsed >= FOUNDATION_ANIMATION_MS) {
+        this.app.ticker.remove(this.animation!);
+        this.animation = null;
+        this.renderAll();
+        this.checkWin();
+      }
+    };
+    this.app.ticker.add(this.animation);
+    return true;
   }
 
-  /**
-   * Handles a tap on a face-up tableau card: if it is the top card of its
-   * column, attempts to move it directly to a matching foundation pile.
-   *
-   * @param col - Tableau column index (0–6).
-   * @param row - Card row within that column.
-   */
-  private handleTableauTap(col: number, row: number): void {
-    const pile = this.state.tableau[col];
-    if (row !== pile.length - 1) return; // only top card taps
-    if (moveTableauToFoundation(this.state, col)) {
-      this.renderAll();
-      this.checkWin();
+  /** Stops any active drag or animation before rebuilding the board. */
+  private cancelInteraction(): void {
+    this.app.stage.off('pointermove', this.onDragMove, this);
+    this.app.stage.off('pointerup', this.onDragEnd, this);
+    this.app.stage.off('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.removeEventListener('pointercancel', this.onPointerCancel);
+    this.drag = null;
+    if (this.animation) {
+      this.app.ticker.remove(this.animation);
+      this.animation = null;
     }
   }
 
@@ -629,6 +665,7 @@ export class KlondikeGame {
     fromRow: number,
     fromFoundation: number
   ): void {
+    if (this.drag || this.animation) return;
     const globalPos = topView.getGlobalPosition();
     const mousePos = e.global;
 
@@ -673,18 +710,29 @@ export class KlondikeGame {
       origY: globalPos.y,
       offX: mousePos.x - globalPos.x,
       offY: mousePos.y - globalPos.y,
-      container: dragContainer
+      container: dragContainer,
+      pointerId: e.pointerId,
+      startX: mousePos.x,
+      startY: mousePos.y,
+      moved: false
     };
 
     this.app.stage.eventMode = 'static';
     this.app.stage.on('pointermove', this.onDragMove, this);
     this.app.stage.on('pointerup', this.onDragEnd, this);
     this.app.stage.on('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.addEventListener('pointercancel', this.onPointerCancel);
   }
+
+  /** Restores the board when the browser cancels the active pointer. */
+  private onPointerCancel = (e: PointerEvent): void => {
+    if (this.drag && e.pointerId === this.drag.pointerId) this.renderAll();
+  };
 
   /** Stage-level handler: repositions the drag container to follow the pointer. */
   private onDragMove = (e: FederatedPointerEvent): void => {
-    if (!this.drag) return;
+    if (!this.drag || e.pointerId !== this.drag.pointerId) return;
+    this.markDragMovement(e);
     this.drag.container.x = e.global.x - this.drag.offX;
     this.drag.container.y = e.global.y - this.drag.offY;
   };
@@ -695,19 +743,34 @@ export class KlondikeGame {
    * valid target, re-renders, and checks for a win condition.
    */
   private onDragEnd = (e: FederatedPointerEvent): void => {
-    if (!this.drag) return;
+    if (!this.drag || e.pointerId !== this.drag.pointerId) return;
+    this.markDragMovement(e);
+    const drag = this.drag;
     this.app.stage.off('pointermove', this.onDragMove, this);
     this.app.stage.off('pointerup', this.onDragEnd, this);
     this.app.stage.off('pointerupoutside', this.onDragEnd, this);
+    this.app.canvas.removeEventListener('pointercancel', this.onPointerCancel);
 
-    const dropped = this.tryDrop(e.global.x, e.global.y);
-    if (!dropped) {
-      // Snap back (just re-render)
+    if (!drag.moved && e.type !== 'pointerupoutside'
+      && this.hitTest(e.global.x, e.global.y, drag.origX, drag.origY)) {
+      if (this.autoPlayDrag(drag)) return;
+      this.renderAll();
+      return;
     }
+    const dropped = this.tryDrop(e.global.x, e.global.y);
     this.drag = null;
     this.renderAll();
     if (dropped) this.checkWin();
   };
+
+  /** Records whether the pointer has moved far enough to count as a drag. */
+  private markDragMovement(e: FederatedPointerEvent): void {
+    if (!this.drag) return;
+    const dx = e.global.x - this.drag.startX;
+    const dy = e.global.y - this.drag.startY;
+    const threshold = BASE_CLICK_DISTANCE * this.scale;
+    if (dx * dx + dy * dy > threshold * threshold) this.drag.moved = true;
+  }
 
   /**
    * Attempts to resolve a drag drop at the given global coordinates.
@@ -731,6 +794,7 @@ export class KlondikeGame {
       if (this.hitTest(gx, gy, fx, this.topY)) {
         if (
           cards.length === 1 &&
+          fi === foundationIndexForSuit(card.suit) &&
           canPlaceOnFoundation(card, this.state.foundations[fi])
         ) {
           // Remove from source
@@ -843,56 +907,6 @@ export class KlondikeGame {
     const w = rw ?? this.cardW;
     const h = rh ?? this.cardH;
     return gx >= rx && gx <= rx + w && gy >= ry && gy <= ry + h;
-  }
-
-  /**
-   * `pointerup` handler attached to a foundation slot container.
-   * Validates the move and commits it to the game state on success.
-   *
-   * @param fi - Foundation index (0–3).
-   */
-  private dropOnFoundation(fi: number): void {
-    if (!this.drag) return;
-    const cards = this.drag.views.map((v) => v.card);
-    const card = cards[0];
-    if (cards.length !== 1) return;
-    if (canPlaceOnFoundation(card, this.state.foundations[fi])) {
-      this.removeFromSource(
-        this.drag.fromCol,
-        this.drag.fromRow,
-        this.drag.fromFoundation,
-        1
-      );
-      this.state.foundations[fi].push(card);
-      this.drag = null;
-      this.renderAll();
-      this.checkWin();
-    }
-  }
-
-  /**
-   * `pointerup` handler attached to a tableau slot or card container.
-   * Validates the move and commits the full dragged stack on success.
-   *
-   * @param col - Tableau column index (0–6).
-   */
-  private dropOnTableau(col: number): void {
-    if (!this.drag) return;
-    const cards = this.drag.views.map((v) => v.card);
-    const card = cards[0];
-    const pile = this.state.tableau[col];
-    if (canPlaceOnTableau(card, pile)) {
-      this.removeFromSource(
-        this.drag.fromCol,
-        this.drag.fromRow,
-        this.drag.fromFoundation,
-        cards.length
-      );
-      pile.push(...cards);
-      this.drag = null;
-      this.renderAll();
-      this.checkWin();
-    }
   }
 
   // ── Win ───────────────────────────────────────────────────────────────────
