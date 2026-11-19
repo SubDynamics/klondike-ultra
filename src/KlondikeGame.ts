@@ -53,6 +53,10 @@ const BASE_DROP_ZONE_EXPANSION = 30;
 const BASE_DROP_ZONE_BOTTOM = 60;
 const BASE_CLICK_DISTANCE = 6;
 const FOUNDATION_ANIMATION_MS = 250;
+const THREE_CARD_DRAW_COUNT = 3;
+const HALF = 0.5;
+const TWO = 2;
+const BUTTON_FONT_SIZE = 13;
 
 // ─── Drag state ───────────────────────────────────────────────────────────────
 interface DragInfo {
@@ -110,7 +114,7 @@ export class KlondikeGame {
   private state: GameState;
   private themes: ColorTheme[];
   private currentThemeIndex: number;
-  private drawCount: 1 | 3 = 1;
+  private drawCount: 1 | typeof THREE_CARD_DRAW_COUNT = 1;
   private settingsOpen = false;
   private tableauViews: CardView[][] = [];
   private drag: DragInfo | null = null;
@@ -254,30 +258,57 @@ export class KlondikeGame {
 
   /** Adds a "New Game" button to the top-right area of the scene. */
   private buildNewGameButton(): void {
-    const s = this.scale;
-    const btn = makeButton(this.theme, s, 'New Game', 90, 13, () => this.newGame());
-    btn.x = this.W - Math.round(105 * s);
-    btn.y = Math.round(8 * s);
+    const BUTTON_WIDTH = 90;
+    const gameScale = this.scale;
+    const btn = makeButton(
+      this.theme,
+      gameScale,
+      'New Game',
+      BUTTON_WIDTH,
+      BUTTON_FONT_SIZE,
+      () => this.newGame()
+    );
+    const horizOffset = 105;
+    const vertOffset = 8;
+    btn.x = this.W - Math.round(horizOffset * gameScale);
+    btn.y = Math.round(vertOffset * gameScale);
     this.mainLayer.addChild(btn);
   }
 
   /** Adds a "Theme: …" cycle button to the top-right area of the scene. */
   private buildThemeButton(): void {
-    const s = this.scale;
-    const btn = makeButton(this.theme, s, `Theme: ${this.theme.name}`, 145, 12, () => this.cycleTheme());
-    btn.x = this.W - Math.round(260 * s);
-    btn.y = Math.round(8 * s);
+    const gameScale = this.scale;
+    const btn = makeButton(
+      this.theme,
+      gameScale,
+      `Theme: ${this.theme.name}`,
+      145,
+      BUTTON_FONT_SIZE,
+      () => this.cycleTheme()
+    );
+    btn.x = this.W - Math.round(260 * gameScale);
+    btn.y = Math.round(8 * gameScale);
     this.mainLayer.addChild(btn);
   }
 
   /** Adds the settings button to the top bar. */
   private buildSettingsButton(): void {
-    const s = this.scale;
-    const btn = makeButton(this.theme, s, 'Settings', 85, 13, () => {
-      this.settingsOpen = true;
-      this.renderAll();
-    });
-    btn.position.set(this.W - Math.round(355 * s), Math.round(8 * s));
+    const gameScale = this.scale;
+    const btn = makeButton(
+      this.theme,
+      gameScale,
+      'Settings',
+      85,
+      BUTTON_FONT_SIZE,
+      () => {
+        this.settingsOpen = true;
+        this.renderAll();
+      }
+    );
+    btn.position.set(
+      this.W - Math.round(355 * gameScale),
+      Math.round(8 * gameScale)
+    );
     this.mainLayer.addChild(btn);
   }
 
@@ -286,17 +317,20 @@ export class KlondikeGame {
     const options = [
       {
         label: '3-Card draw',
-        enabled: this.drawCount === 3,
-        toggle: () => {
-          this.drawCount = this.drawCount === 3 ? 1 : 3;
+        enabled: this.drawCount === THREE_CARD_DRAW_COUNT,
+        toggle: (): void => {
+          this.drawCount =
+            this.drawCount === THREE_CARD_DRAW_COUNT
+              ? 1
+              : THREE_CARD_DRAW_COUNT;
         }
       }
     ];
     const s = Math.min(this.scale, this.H / (160 + options.length * 50));
     const panelW = 340 * s;
     const panelH = (140 + options.length * 50) * s;
-    const x = (this.W - panelW) / 2;
-    const y = (this.H - panelH) / 2;
+    const x = (this.W - panelW) * HALF;
+    const y = (this.H - panelH) * HALF;
     const overlay = new Container();
     overlay.zIndex = 1000;
     const backdrop = new Graphics();
@@ -305,9 +339,10 @@ export class KlondikeGame {
     overlay.addChild(backdrop);
 
     const panel = new Graphics();
-    panel.roundRect(x, y, panelW, panelH, 12 * s)
+    panel
+      .roundRect(x, y, panelW, panelH, 12 * s)
       .fill({ color: this.theme.winScreenPanelFill })
-      .stroke({ color: this.theme.winScreenPanelStroke, width: 2 * s });
+      .stroke({ color: this.theme.winScreenPanelStroke, width: TWO * s });
     panel.eventMode = 'static';
     overlay.addChild(panel);
 
@@ -319,14 +354,15 @@ export class KlondikeGame {
         fontWeight: 'bold'
       })
     });
-    title.anchor.set(0.5);
-    title.position.set(this.W / 2, y + 30 * s);
+    title.anchor.set(HALF);
+    title.position.set(this.W * HALF, y + 30 * s);
     overlay.addChild(title);
 
     options.forEach((option, i) => {
       const row = new Container();
       const rowBg = new Graphics();
-      rowBg.roundRect(0, 0, 300 * s, 40 * s, 6 * s)
+      rowBg
+        .roundRect(0, 0, 300 * s, 40 * s, 6 * s)
         .fill({ color: this.theme.newGameButtonFill })
         .stroke({ color: this.theme.newGameButtonStroke, width: s });
       const label = new Text({
@@ -336,7 +372,7 @@ export class KlondikeGame {
           fill: this.theme.newGameButtonTextColor
         })
       });
-      label.anchor.set(0, 0.5);
+      label.anchor.set(0, HALF);
       label.position.set(12 * s, 20 * s);
       row.addChild(rowBg, label);
       row.position.set(x + 20 * s, y + (55 + i * 50) * s);
@@ -357,8 +393,8 @@ export class KlondikeGame {
         fontWeight: 'bold'
       })
     });
-    close.anchor.set(0.5);
-    close.position.set(this.W / 2, y + panelH - 25 * s);
+    close.anchor.set(HALF);
+    close.position.set(this.W * HALF, y + panelH - 25 * s);
     close.eventMode = 'static';
     close.cursor = 'pointer';
     close.on('pointerdown', () => {
@@ -508,7 +544,6 @@ export class KlondikeGame {
         const top = fp[fp.length - 1];
         fc.addChild(makeCardFace(top, this.theme, this.dims));
       }
-
     }
   }
 
@@ -564,10 +599,11 @@ export class KlondikeGame {
    */
   private autoPlayDrag(drag: DragInfo): boolean {
     const card = drag.views[0].card;
-    const moved = drag.fromCol < 0
-      ? moveWasteToFoundation(this.state)
-      : drag.fromRow === this.state.tableau[drag.fromCol].length - 1
-        && moveTableauToFoundation(this.state, drag.fromCol);
+    const moved =
+      drag.fromCol < 0
+        ? moveWasteToFoundation(this.state)
+        : drag.fromRow === this.state.tableau[drag.fromCol].length - 1 &&
+          moveTableauToFoundation(this.state, drag.fromCol);
     if (!moved) return false;
 
     const fi = foundationIndexForSuit(card.suit);
@@ -575,18 +611,25 @@ export class KlondikeGame {
     const foundation = this.foundationViews[fi];
     foundation.children[0].visible = false;
     const pile = this.state.foundations[fi];
-    foundation.addChild(pile.length > 1
-      ? makeCardFace(pile[pile.length - 2], this.theme, this.dims)
-      : makeEmptySlot(this.theme, this.dims, ['♠', '♥', '♦', '♣'][fi]));
+    foundation.addChild(
+      pile.length > 1
+        ? makeCardFace(pile[pile.length - TWO], this.theme, this.dims)
+        : makeEmptySlot(this.theme, this.dims, ['♠', '♥', '♦', '♣'][fi])
+    );
     const view = new CardView(card, this.theme, this.dims);
     view.position.set(drag.origX, drag.origY);
     this.dragLayer.addChild(view);
     this.mainLayer.eventMode = 'none';
     let elapsed = 0;
-    this.animation = (ticker: Ticker) => {
+    this.animation = (ticker: Ticker): void => {
       elapsed += ticker.deltaMS;
-      const progress = easingValue('sineInOut', Math.min(elapsed / FOUNDATION_ANIMATION_MS, 1));
-      view.x = drag.origX + (this.foundationXStart + fi * this.colSpacing - drag.origX) * progress;
+      const progress = easingValue(
+        'sineInOut',
+        Math.min(elapsed / FOUNDATION_ANIMATION_MS, 1)
+      );
+      view.x =
+        drag.origX +
+        (this.foundationXStart + fi * this.colSpacing - drag.origX) * progress;
       view.y = drag.origY + (this.topY - drag.origY) * progress;
       if (elapsed >= FOUNDATION_ANIMATION_MS) {
         this.app.ticker.remove(this.animation!);
@@ -686,7 +729,7 @@ export class KlondikeGame {
         view.renderable = false;
       }
     } else if (fromFoundation < 0) {
-      const previous = this.state.waste[this.state.waste.length - 2];
+      const previous = this.state.waste[this.state.waste.length - TWO];
       if (this.drawCount === 1 || this.state.wasteVisibleCount === 1) {
         topView.parent!.addChildAt(
           previous
@@ -751,8 +794,11 @@ export class KlondikeGame {
     this.app.stage.off('pointerupoutside', this.onDragEnd, this);
     this.app.canvas.removeEventListener('pointercancel', this.onPointerCancel);
 
-    if (!drag.moved && e.type !== 'pointerupoutside'
-      && this.hitTest(e.global.x, e.global.y, drag.origX, drag.origY)) {
+    if (
+      !drag.moved &&
+      e.type !== 'pointerupoutside' &&
+      this.hitTest(e.global.x, e.global.y, drag.origX, drag.origY)
+    ) {
       if (this.autoPlayDrag(drag)) return;
       this.renderAll();
       return;
@@ -934,7 +980,7 @@ export class KlondikeGame {
 
     const panel = new Graphics();
     panel
-      .roundRect(this.W / 2 - 150, this.H / 2 - 80, 300, 160, 16)
+      .roundRect(this.W * HALF - 150, this.H * HALF - 80, 300, 160, 16)
       .fill({ color: this.theme.winScreenPanelFill })
       .stroke({ color: this.theme.winScreenPanelStroke, width: 3 });
     overlay.addChild(panel);
@@ -947,9 +993,9 @@ export class KlondikeGame {
         fontWeight: 'bold'
       })
     });
-    title.anchor.set(0.5);
-    title.x = this.W / 2;
-    title.y = this.H / 2 - 30;
+    title.anchor.set(HALF);
+    title.x = this.W * HALF;
+    title.y = this.H * HALF - 30;
     overlay.addChild(title);
 
     const btn = new Container();
@@ -965,12 +1011,12 @@ export class KlondikeGame {
         fontWeight: 'bold'
       })
     });
-    btnLabel.anchor.set(0.5);
+    btnLabel.anchor.set(HALF);
     btnLabel.x = 80;
     btnLabel.y = 20;
     btn.addChild(btnBg, btnLabel);
-    btn.x = this.W / 2 - 80;
-    btn.y = this.H / 2 + 20;
+    btn.x = this.W * HALF - 80;
+    btn.y = this.H * HALF + 20;
     btn.eventMode = 'static';
     btn.cursor = 'pointer';
     btn.on('pointerdown', () => this.newGame());

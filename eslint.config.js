@@ -13,7 +13,14 @@ export default defineConfig([
     },
     rules: {
       eqeqeq: 'error',
-      'no-magic-numbers': 'warn',
+      'no-magic-numbers': [
+        'warn',
+        {
+          ignore: [-1, 0, 1],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true
+        }
+      ],
       'no-alert': 'warn',
       'no-console': 'warn',
       semi: 'off',
