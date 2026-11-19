@@ -1,7 +1,7 @@
 import type { ColorTheme } from '../types/themeTypes';
 
 export const alternateTheme01: ColorTheme = {
-  name: 'Alternate Theme 01',
+  name: 'Theme 01',
   playingCardsBlack: '#000000',
   playingCardsRed: '#ff0000',
   playingCardsBackground: '#f0f0f0',
